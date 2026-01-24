@@ -27,6 +27,7 @@
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
+    "@iconify-json/heroicons": "^1.2.3",
     "@types/node": "^25.0.10",
     "prisma": "^6.19.2"
   }

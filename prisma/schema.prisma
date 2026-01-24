@@ -43,31 +43,31 @@ enum PaymentStatus {
 }
 
 model Category {
-  id        String     @id @default(cuid())
+  id        String   @id @default(cuid())
   name      String
-  slug      String     @unique
-  sortOrder Int        @default(0)
-  isActive  Boolean    @default(true)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  slug      String   @unique
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  items     MenuItem[]
+  items MenuItem[]
 }
 
 model MenuItem {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   categoryId  String?
   name        String
   description String?
   price       Int
   photoUrl    String?
-  isAvailable Boolean   @default(true)
-  sortOrder   Int       @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  isAvailable Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  category    Category? @relation(fields: [categoryId], references: [id])
-  orderItems  OrderItem[]
+  category   Category?   @relation(fields: [categoryId], references: [id])
+  orderItems OrderItem[]
 
   @@index([categoryId])
 }
@@ -97,8 +97,8 @@ model Reservation {
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 
-  table         Table?            @relation(fields: [tableId], references: [id])
-  orders        Order[]
+  table  Table?  @relation(fields: [tableId], references: [id])
+  orders Order[]
 
   @@index([tableId])
   @@index([status])
@@ -106,10 +106,10 @@ model Reservation {
 }
 
 model Order {
-  id            String      @id @default(cuid())
-  orderNumber   String      @unique
-  type          OrderType
-  status        OrderStatus @default(PLACED)
+  id          String      @id @default(cuid())
+  orderNumber String      @unique
+  type        OrderType
+  status      OrderStatus @default(PLACED)
 
   tableId       String?
   reservationId String?
@@ -118,16 +118,16 @@ model Order {
   customerPhone String?
   notes         String?
 
-  subtotal      Int         @default(0)
-  total         Int         @default(0)
+  subtotal Int @default(0)
+  total    Int @default(0)
 
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  table         Table?      @relation(fields: [tableId], references: [id])
-  reservation   Reservation? @relation(fields: [reservationId], references: [id])
-  items         OrderItem[]
-  payments      Payment[]
+  table       Table?       @relation(fields: [tableId], references: [id])
+  reservation Reservation? @relation(fields: [reservationId], references: [id])
+  items       OrderItem[]
+  payments    Payment[]
 
   @@index([tableId])
   @@index([reservationId])
@@ -136,42 +136,42 @@ model Order {
 }
 
 model OrderItem {
-  id           String   @id @default(cuid())
-  orderId      String
-  menuItemId   String
+  id         String @id @default(cuid())
+  orderId    String
+  menuItemId String
 
-  nameSnapshot String
+  nameSnapshot  String
   priceSnapshot Int
-  qty          Int
-  notes        String?
-  lineTotal    Int
+  qty           Int
+  notes         String?
+  lineTotal     Int
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  order        Order    @relation(fields: [orderId], references: [id])
-  menuItem     MenuItem @relation(fields: [menuItemId], references: [id])
+  order    Order    @relation(fields: [orderId], references: [id])
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
 
   @@index([orderId])
   @@index([menuItemId])
 }
 
 model Payment {
-  id            String          @id @default(cuid())
-  orderId       String
-  provider      PaymentProvider @default(MIDTRANS)
-  amount        Int
-  currency      String          @default("IDR")
-  status        PaymentStatus   @default(PENDING)
+  id       String          @id @default(cuid())
+  orderId  String
+  provider PaymentProvider @default(MIDTRANS)
+  amount   Int
+  currency String          @default("IDR")
+  status   PaymentStatus   @default(PENDING)
 
-  providerRef   String?
+  providerRef     String?
   providerPayload Json?
-  paidAt        DateTime?
+  paidAt          DateTime?
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  order         Order    @relation(fields: [orderId], references: [id])
+  order Order @relation(fields: [orderId], references: [id])
 
   @@index([orderId])
   @@index([status])
@@ -183,9 +183,50 @@ model Review {
   rating      Int
   comment     String?
   isPublished Boolean  @default(false)
+  isFeatured  Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([isPublished])
+  @@index([isFeatured])
   @@index([rating])
+}
+
+model LandingHero {
+  id          String   @id @default(cuid())
+  title       String
+  subtitle    String
+  description String
+  ctaText     String
+  ctaLink     String
+  promoText   String?
+  imageUrl    String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model FeaturedMenuItem {
+  id          String   @id @default(cuid())
+  menuItemId  String?
+  name        String
+  description String
+  price       Int
+  imageUrl    String
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model RestaurantInfo {
+  id           String   @id @default(cuid())
+  name         String
+  description  String
+  address      String
+  phone        String
+  email        String
+  gmapsUrl     String?
+  openingHours String
+  updatedAt    DateTime @updatedAt
 }
