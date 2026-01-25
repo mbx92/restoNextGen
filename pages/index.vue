@@ -4,6 +4,10 @@ import FeaturedSection from "~/components/landing/FeaturedSection.vue";
 import ReviewSection from "~/components/landing/ReviewSection.vue";
 import LocationSection from "~/components/landing/LocationSection.vue";
 
+definePageMeta({
+  layout: "default",
+});
+
 useHead({
   title: "SalmonSoup - Authentic Indonesian Seafood",
   meta: [

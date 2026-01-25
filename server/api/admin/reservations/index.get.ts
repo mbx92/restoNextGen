@@ -1,17 +1,19 @@
-import prisma from '~/server/db/prisma'
+import prisma from "~/server/db/prisma";
 
 export default defineEventHandler(async (event) => {
-  const query = getQuery(event)
-  const status = query.status as string | undefined
-  
+  const query = getQuery(event);
+  const status = query.status as string | undefined;
+
   const reservations = await prisma.reservation.findMany({
-    where: status ? { status: status as any } : undefined,
+    where: status
+      ? { status: status as "PENDING" | "CONFIRMED" | "CANCELLED" }
+      : undefined,
     include: {
-      table: true
+      table: true,
     },
-    orderBy: { startAt: 'desc' },
-    take: 50
-  })
-  
-  return reservations
-})
+    orderBy: { startAt: "desc" },
+    take: 50,
+  });
+
+  return reservations;
+});

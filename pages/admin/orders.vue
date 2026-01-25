@@ -1,9 +1,12 @@
 <script setup lang="ts">
 definePageMeta({
   layout: "admin",
+  middleware: ["admin-auth"],
 });
 
-const { data: orders, refresh } = await useFetch("/api/admin/orders/queue");
+const { data: orders, refresh: _refresh } = await useFetch(
+  "/api/admin/orders/queue",
+);
 
 const updateStatus = async (orderId: string, status: string) => {
   // TODO: Implement update order status API
@@ -40,10 +43,10 @@ const updateStatus = async (orderId: string, status: string) => {
           </div>
           <select
             :value="order.status"
+            class="rounded-lg border border-stone-300 px-3 py-1 text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100"
             @change="
               updateStatus(order.id, ($event.target as HTMLSelectElement).value)
             "
-            class="rounded-lg border border-stone-300 px-3 py-1 text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100"
           >
             <option value="PLACED">Placed</option>
             <option value="ACCEPTED">Accepted</option>

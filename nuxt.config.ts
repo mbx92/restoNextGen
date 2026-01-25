@@ -1,26 +1,38 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  compatibilityDate: '2025-07-15',
+  compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
 
-  modules: [
-    '@nuxt/eslint',
-    '@nuxt/ui'
-  ],
+  modules: ["@nuxt/eslint", "@nuxt/ui", "nuxt-auth-utils"],
 
-  css: ['~/assets/css/main.css'],
+  css: ["~/assets/css/main.css"],
 
-  buildDir: 'C:/temp/restoNextGen/.nuxt',
+  vite: {
+    server: {
+      watch: {
+        usePolling: false,
+        useFsEvents: false,
+      },
+    },
+  },
 
-  // Use remote icons to avoid build path issues  
+  // Use remote icons to avoid build path issues
   icon: {
-    serverBundle: 'remote'
+    serverBundle: "remote",
   },
 
   // Customize Nuxt UI theme colors
   ui: {
     theme: {
-      colors: ['amber', 'stone', 'success', 'info', 'warning', 'error']
-    }
-  }
-})
+      colors: [
+        "primary",
+        "secondary",
+        "neutral",
+        "success",
+        "info",
+        "warning",
+        "error",
+      ],
+    },
+  },
+});

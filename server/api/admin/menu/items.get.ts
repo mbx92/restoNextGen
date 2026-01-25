@@ -1,11 +1,12 @@
-import prisma from '~/server/db/prisma'
-
 export default defineEventHandler(async () => {
+  const prisma = usePrisma();
+
   const items = await prisma.menuItem.findMany({
     include: {
-      category: true
+      category: true,
     },
-    orderBy: { sortOrder: 'asc' }
-  })
-  return items
-})
+    orderBy: { sortOrder: "asc" },
+  });
+
+  return items;
+});

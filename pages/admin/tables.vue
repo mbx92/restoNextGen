@@ -1,6 +1,7 @@
 <script setup lang="ts">
 definePageMeta({
   layout: "admin",
+  middleware: ["admin-auth"],
 });
 
 const { data: tables, refresh } = await useFetch("/api/admin/tables/index");
@@ -33,9 +34,9 @@ const addTable = async () => {
 
     <div class="mb-6">
       <UButton
-        @click="isAdding = !isAdding"
         color="neutral"
         class="!bg-amber-700 !text-white hover:!bg-amber-800"
+        @click="isAdding = !isAdding"
       >
         <UIcon name="i-heroicons-plus" class="h-5 w-5" />
         Add Table
@@ -58,7 +59,7 @@ const addTable = async () => {
             type="text"
             placeholder="e.g., T01"
             class="w-full rounded-lg border border-stone-300 px-4 py-2 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100"
-          />
+          >
         </div>
         <div>
           <label class="mb-2 block text-sm font-medium text-stone-700"
@@ -69,7 +70,7 @@ const addTable = async () => {
             type="text"
             placeholder="e.g., Table 1"
             class="w-full rounded-lg border border-stone-300 px-4 py-2 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100"
-          />
+          >
         </div>
         <div>
           <label class="mb-2 block text-sm font-medium text-stone-700"
@@ -80,22 +81,22 @@ const addTable = async () => {
             type="number"
             min="1"
             class="w-full rounded-lg border border-stone-300 px-4 py-2 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100"
-          />
+          >
         </div>
       </div>
       <div class="mt-4 flex gap-3">
         <UButton
-          @click="addTable"
           color="neutral"
           class="!bg-amber-700 !text-white hover:!bg-amber-800"
+          @click="addTable"
         >
           Save Table
         </UButton>
         <UButton
-          @click="isAdding = false"
           color="neutral"
           variant="outline"
           class="!border-stone-300 !text-stone-700 hover:!bg-stone-50"
+          @click="isAdding = false"
         >
           Cancel
         </UButton>

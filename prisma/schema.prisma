@@ -7,6 +7,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([email])
+}
+
 enum OrderType {
   DINE_IN
   TAKEAWAY
@@ -62,6 +74,7 @@ model MenuItem {
   price       Int
   photoUrl    String?
   isAvailable Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -70,6 +83,7 @@ model MenuItem {
   orderItems OrderItem[]
 
   @@index([categoryId])
+  @@index([isFeatured])
 }
 
 model Table {
@@ -206,6 +220,7 @@ model LandingHero {
   updatedAt   DateTime @updatedAt
 }
 
+// DEPRECATED: Use MenuItem.isFeatured instead
 model FeaturedMenuItem {
   id          String   @id @default(cuid())
   menuItemId  String?
@@ -220,13 +235,36 @@ model FeaturedMenuItem {
 }
 
 model RestaurantInfo {
-  id           String   @id @default(cuid())
-  name         String
-  description  String
-  address      String
-  phone        String
-  email        String
-  gmapsUrl     String?
-  openingHours String
-  updatedAt    DateTime @updatedAt
+  id             String   @id @default(cuid())
+  name           String
+  description    String
+  address        String
+  phoneNumber    String
+  email          String
+  mapsUrl        String?
+  mapsEmbedUrl   String?
+  openingHours   String
+  updatedAt      DateTime @updatedAt
+}
+
+model SiteSettings {
+  id        String   @id @default(cuid())
+  key       String   @unique // 'header' or 'footer'
+  
+  // Header settings
+  logoUrl   String?
+  logoText  String?
+  
+  // Social media links
+  facebookUrl  String?
+  instagramUrl String?
+  twitterUrl   String?
+  
+  // Footer settings
+  copyrightText String?
+  footerLinks   Json?   // JSON array of {label, url}
+  
+  updatedAt DateTime @updatedAt
+  
+  @@index([key])
 }

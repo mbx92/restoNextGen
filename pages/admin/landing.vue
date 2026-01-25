@@ -1,16 +1,27 @@
 <script setup lang="ts">
 definePageMeta({
   layout: "admin",
+  middleware: ["admin-auth"],
 });
 
-const { data: hero, refresh: refreshHero } = await useFetch(
+interface Hero {
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  ctaText: string;
+  ctaLink: string;
+  promoText: string | null;
+  imageUrl: string | null;
+  isActive: boolean;
+}
+
+const { data: heroes, refresh: refreshHeroes } = await useFetch<Hero[]>(
   "/api/admin/landing/hero",
 );
-const { data: featuredItems, refresh: refreshFeatured } = await useFetch(
-  "/api/admin/featured-menu/index",
-);
 
-const isEditingHero = ref(false);
+const isHeroModalOpen = ref(false);
+const editingHero = ref<Hero | null>(null);
 const heroForm = ref({
   title: "",
   subtitle: "",
@@ -19,184 +30,294 @@ const heroForm = ref({
   ctaLink: "#menu",
   promoText: "",
   imageUrl: "",
+  isActive: true,
 });
 
-const editHero = () => {
-  const active = hero.value?.find((h: any) => h.isActive);
-  if (active) {
-    heroForm.value = { ...active };
-  }
-  isEditingHero.value = true;
+const openCreateHero = () => {
+  editingHero.value = null;
+  heroForm.value = {
+    title: "",
+    subtitle: "",
+    description: "",
+    ctaText: "Order Now",
+    ctaLink: "#menu",
+    promoText: "",
+    imageUrl: "",
+    isActive: true,
+  };
+  isHeroModalOpen.value = true;
+};
+
+const openEditHero = (hero: Hero) => {
+  editingHero.value = hero;
+  heroForm.value = { ...hero };
+  isHeroModalOpen.value = true;
 };
 
 const saveHero = async () => {
-  await $fetch("/api/admin/landing/hero", {
-    method: "POST",
-    body: heroForm.value,
-  });
-  await refreshHero();
-  isEditingHero.value = false;
+  try {
+    if (editingHero.value) {
+      await $fetch(`/api/admin/landing/hero/${editingHero.value.id}`, {
+        method: "PATCH",
+        body: heroForm.value,
+      });
+    } else {
+      await $fetch("/api/admin/landing/hero", {
+        method: "POST",
+        body: heroForm.value,
+      });
+    }
+    await refreshHeroes();
+    isHeroModalOpen.value = false;
+  } catch (error) {
+    console.error("Failed to save hero:", error);
+  }
+};
+
+const toggleHeroActive = async (hero: Hero) => {
+  try {
+    await $fetch(`/api/admin/landing/hero/${hero.id}`, {
+      method: "PATCH",
+      body: { isActive: !hero.isActive },
+    });
+    await refreshHeroes();
+  } catch (error) {
+    console.error("Failed to toggle hero:", error);
+  }
+};
+
+const deleteHero = async (id: string) => {
+  if (!confirm("Are you sure you want to delete this hero?")) return;
+
+  try {
+    await $fetch(`/api/admin/landing/hero/${id}`, {
+      method: "DELETE",
+    });
+    await refreshHeroes();
+  } catch (error) {
+    console.error("Failed to delete hero:", error);
+  }
 };
 </script>
 
 <template>
   <div>
-    <div class="mb-8">
-      <h1 class="text-3xl font-serif font-bold text-stone-900">Landing Page</h1>
-      <p class="mt-2 text-stone-600">
-        Manage hero section and featured content
-      </p>
+    <div class="mb-8 flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-serif font-bold text-stone-900">
+          Landing Page
+        </h1>
+        <p class="mt-2 text-stone-600">
+          Manage hero section content
+        </p>
+      </div>
     </div>
 
     <!-- Hero Section -->
     <div class="mb-8 rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
-      <div class="mb-4 flex items-center justify-between">
-        <h2 class="text-xl font-semibold text-stone-900">Hero Section</h2>
+      <div class="mb-6 flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-semibold text-stone-900">Hero Sections</h2>
+          <p class="text-sm text-stone-600 mt-1">
+            Multiple active heroes will appear as a carousel
+          </p>
+        </div>
         <UButton
-          v-if="!isEditingHero"
-          @click="editHero"
-          color="neutral"
-          variant="outline"
-          class="!border-stone-300 !text-stone-700 hover:!bg-stone-50"
+          color="primary"
+          icon="i-heroicons-plus"
+          @click="openCreateHero"
         >
-          Edit Hero
+          Add Hero
         </UButton>
       </div>
 
-      <div v-if="!isEditingHero && hero && hero.length > 0">
+      <!-- Heroes List -->
+      <div v-if="heroes && heroes.length > 0" class="space-y-4">
         <div
-          v-for="h in hero.filter((h: any) => h.isActive)"
-          :key="h.id"
-          class="space-y-3"
+          v-for="hero in heroes"
+          :key="hero.id"
+          class="flex items-start gap-4 rounded-xl border border-stone-200 bg-white p-4 hover:shadow-md transition-shadow"
         >
-          <div class="rounded-lg border border-stone-100 bg-stone-50 p-4">
-            <p class="text-sm font-medium text-stone-600">Title</p>
-            <p class="text-stone-900">{{ h.title }}</p>
-          </div>
-          <div class="rounded-lg border border-stone-100 bg-stone-50 p-4">
-            <p class="text-sm font-medium text-stone-600">Subtitle</p>
-            <p class="text-amber-700 italic">{{ h.subtitle }}</p>
-          </div>
-          <div class="rounded-lg border border-stone-100 bg-stone-50 p-4">
-            <p class="text-sm font-medium text-stone-600">Description</p>
-            <p class="text-stone-700">{{ h.description }}</p>
-          </div>
+          <!-- Image -->
           <div
-            v-if="h.promoText"
-            class="rounded-lg border border-amber-100 bg-amber-50 p-4"
+            class="w-32 h-32 flex-shrink-0 rounded-lg overflow-hidden bg-stone-100"
           >
-            <p class="text-sm font-medium text-amber-700">Promo Text</p>
-            <p class="text-amber-900">{{ h.promoText }}</p>
+            <img
+              v-if="hero.imageUrl"
+              :src="hero.imageUrl"
+              :alt="hero.title"
+              class="w-full h-full object-cover"
+            />
+            <div v-else class="w-full h-full flex items-center justify-center">
+              <UIcon
+                name="i-heroicons-photo"
+                class="w-12 h-12 text-stone-300"
+              />
+            </div>
+          </div>
+
+          <!-- Content -->
+          <div class="flex-1 min-w-0">
+            <h3 class="text-lg font-bold text-stone-900 mb-1">
+              {{ hero.title }}
+              <span class="text-amber-700 italic">{{ hero.subtitle }}</span>
+            </h3>
+            <p class="text-sm text-stone-600 mb-2 line-clamp-2">
+              {{ hero.description }}
+            </p>
+            <div
+              v-if="hero.promoText"
+              class="inline-flex items-center gap-1 text-xs bg-amber-50 text-amber-700 px-2 py-1 rounded-full"
+            >
+              <UIcon name="i-heroicons-sparkles" class="w-3 h-3" />
+              {{ hero.promoText }}
+            </div>
+
+            <!-- Actions -->
+            <div class="mt-3 flex gap-2">
+              <UButton
+                size="xs"
+                color="neutral"
+                variant="outline"
+                icon="i-heroicons-pencil"
+                @click="openEditHero(hero)"
+              >
+                Edit
+              </UButton>
+              <UButton
+                size="xs"
+                color="error"
+                variant="outline"
+                icon="i-heroicons-trash"
+                @click="deleteHero(hero.id)"
+              >
+                Delete
+              </UButton>
+            </div>
+          </div>
+
+          <!-- Toggle Active -->
+          <div class="flex flex-col items-end gap-2">
+            <UBadge :color="hero.isActive ? 'success' : 'neutral'" size="xs">
+              {{ hero.isActive ? "Active" : "Inactive" }}
+            </UBadge>
+            <USwitch
+              :model-value="hero.isActive"
+              @update:model-value="toggleHeroActive(hero)"
+            />
           </div>
         </div>
       </div>
 
-      <div v-else-if="isEditingHero" class="space-y-4">
-        <div>
-          <label class="mb-2 block text-sm font-medium text-stone-700"
-            >Title</label
-          >
-          <input
-            v-model="heroForm.title"
-            type="text"
-            class="w-full rounded-lg border border-stone-300 px-4 py-2 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100"
-          />
+      <!-- Empty State -->
+      <div
+        v-else
+        class="text-center py-12 bg-stone-50 rounded-xl border-2 border-dashed border-stone-300"
+      >
+        <UIcon
+          name="i-heroicons-sparkles"
+          class="w-16 h-16 text-stone-400 mx-auto mb-4"
+        />
+        <h3 class="text-xl font-semibold text-stone-900 mb-2">
+          No Hero Sections Yet
+        </h3>
+        <p class="text-stone-600 mb-6">
+          Add your first hero section to showcase on the landing page.
+        </p>
+        <UButton color="primary" @click="openCreateHero"> Add Hero </UButton>
+      </div>
+    </div>
+
+    <!-- Hero Modal -->
+    <UModal
+      v-model:open="isHeroModalOpen"
+      :title="editingHero ? 'Edit Hero' : 'New Hero'"
+      description="Manage hero section details"
+    >
+      <template #body>
+        <div class="space-y-4">
+          <UFormField label="Title" required>
+            <UInput
+              v-model="heroForm.title"
+              placeholder="Authentic Indonesian"
+              class="w-full"
+            />
+          </UFormField>
+
+          <UFormField label="Subtitle" required>
+            <UInput
+              v-model="heroForm.subtitle"
+              placeholder="Salmon Fish Soup"
+              class="w-full"
+            />
+          </UFormField>
+
+          <UFormField label="Description" required>
+            <UTextarea
+              v-model="heroForm.description"
+              placeholder="Fresh salmon cooked to perfection..."
+              :rows="4"
+              class="w-full"
+            />
+          </UFormField>
+
+          <UFormField label="Promo Text (optional)">
+            <UInput
+              v-model="heroForm.promoText"
+              placeholder="Grand Opening - 20% Off All Orders!"
+              class="w-full"
+            />
+          </UFormField>
+
+          <div class="grid grid-cols-2 gap-4">
+            <UFormField label="CTA Text">
+              <UInput
+                v-model="heroForm.ctaText"
+                placeholder="Order Now"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField label="CTA Link">
+              <UInput
+                v-model="heroForm.ctaLink"
+                placeholder="#menu"
+                class="w-full"
+              />
+            </UFormField>
+          </div>
+
+          <UFormField label="Image URL" required>
+            <UInput
+              v-model="heroForm.imageUrl"
+              placeholder="https://example.com/image.jpg"
+              class="w-full"
+            />
+          </UFormField>
+
+          <UFormField label="Status">
+            <div class="flex items-center gap-3">
+              <USwitch v-model="heroForm.isActive" />
+              <span class="text-sm text-stone-600">
+                {{ heroForm.isActive ? "Active" : "Inactive" }}
+              </span>
+            </div>
+          </UFormField>
         </div>
-        <div>
-          <label class="mb-2 block text-sm font-medium text-stone-700"
-            >Subtitle</label
-          >
-          <input
-            v-model="heroForm.subtitle"
-            type="text"
-            class="w-full rounded-lg border border-stone-300 px-4 py-2 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100"
-          />
-        </div>
-        <div>
-          <label class="mb-2 block text-sm font-medium text-stone-700"
-            >Description</label
-          >
-          <textarea
-            v-model="heroForm.description"
-            rows="3"
-            class="w-full rounded-lg border border-stone-300 px-4 py-2 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100"
-          />
-        </div>
-        <div>
-          <label class="mb-2 block text-sm font-medium text-stone-700"
-            >Promo Text (optional)</label
-          >
-          <input
-            v-model="heroForm.promoText"
-            type="text"
-            class="w-full rounded-lg border border-stone-300 px-4 py-2 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100"
-          />
-        </div>
-        <div class="flex gap-3">
+      </template>
+
+      <template #footer>
+        <div class="flex justify-end gap-2">
           <UButton
-            @click="saveHero"
-            color="neutral"
-            class="!bg-amber-700 !text-white hover:!bg-amber-800"
-          >
-            Save Hero
-          </UButton>
-          <UButton
-            @click="isEditingHero = false"
             color="neutral"
             variant="outline"
-            class="!border-stone-300 !text-stone-700 hover:!bg-stone-50"
+            @click="isHeroModalOpen = false"
           >
             Cancel
           </UButton>
+          <UButton color="primary" @click="saveHero"> Save Hero </UButton>
         </div>
-      </div>
-
-      <div v-else class="py-8 text-center text-stone-500">
-        No hero section configured
-      </div>
-    </div>
-
-    <!-- Featured Menu Items -->
-    <div class="rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
-      <div class="mb-4 flex items-center justify-between">
-        <h2 class="text-xl font-semibold text-stone-900">
-          Featured Menu Items
-        </h2>
-        <UButton
-          color="neutral"
-          class="!bg-amber-700 !text-white hover:!bg-amber-800"
-        >
-          Add Item
-        </UButton>
-      </div>
-
-      <div v-if="featuredItems && featuredItems.length > 0" class="space-y-3">
-        <div
-          v-for="item in featuredItems"
-          :key="item.id"
-          class="flex items-center justify-between rounded-lg border border-stone-100 p-4 hover:bg-stone-50"
-        >
-          <div>
-            <p class="font-medium text-stone-900">{{ item.name }}</p>
-            <p class="text-sm text-stone-500">
-              Rp {{ item.price.toLocaleString("id-ID") }}
-            </p>
-          </div>
-          <span
-            class="rounded-full px-3 py-1 text-xs font-medium"
-            :class="
-              item.isActive
-                ? 'bg-green-100 text-green-800'
-                : 'bg-stone-100 text-stone-600'
-            "
-          >
-            {{ item.isActive ? "Active" : "Inactive" }}
-          </span>
-        </div>
-      </div>
-      <div v-else class="py-8 text-center text-stone-500">
-        No featured items
-      </div>
-    </div>
+      </template>
+    </UModal>
   </div>
 </template>

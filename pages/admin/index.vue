@@ -1,9 +1,10 @@
 <script setup lang="ts">
 definePageMeta({
   layout: "admin",
+  middleware: ["admin-auth"],
 });
 
-const { data: stats } = await useFetch("/api/admin/dashboard/stats");
+const { data: _stats } = await useFetch("/api/admin/dashboard/stats");
 const { data: orders } = await useFetch("/api/admin/orders/queue");
 const { data: reservations } = await useFetch("/api/admin/reservations/index", {
   query: { status: "PENDING" },

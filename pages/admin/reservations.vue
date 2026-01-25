@@ -1,6 +1,7 @@
 <script setup lang="ts">
 definePageMeta({
   layout: "admin",
+  middleware: ["admin-auth"],
 });
 
 const statusFilter = ref("PENDING");
@@ -24,8 +25,8 @@ const { data: reservations, refresh } = await useFetch(
     <div class="mb-6">
       <select
         v-model="statusFilter"
-        @change="refresh"
         class="rounded-lg border border-stone-300 px-4 py-2 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100"
+        @change="refresh"
       >
         <option value="">All Reservations</option>
         <option value="PENDING">Pending</option>

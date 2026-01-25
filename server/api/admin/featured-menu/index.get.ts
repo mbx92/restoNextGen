@@ -1,8 +1,7 @@
-import prisma from '~/server/db/prisma'
-
 export default defineEventHandler(async () => {
+  const prisma = usePrisma();
   const items = await prisma.featuredMenuItem.findMany({
-    orderBy: { sortOrder: 'asc' }
-  })
-  return items
-})
+    orderBy: { sortOrder: "asc" },
+  });
+  return items;
+});

@@ -1,7 +1,2 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
-
-/* Override primary color to amber for calm theme */
-:root {
-  --ui-primary: var(--ui-color-amber-700);
-}
