@@ -201,7 +201,7 @@ const groupedItems = computed(() => {
                   :src="item.photoUrl"
                   :alt="item.name"
                   class="w-full h-full object-cover"
-                />
+                >
               </div>
               <div
                 v-else
