@@ -37,7 +37,7 @@ function formatPrice(price: number) {
               "
               :alt="item.name"
               class="h-full w-full object-cover transition duration-500 group-hover:scale-110"
-            />
+            >
           </div>
           <div class="flex flex-1 flex-col p-6">
             <div class="flex justify-between items-start mb-2">

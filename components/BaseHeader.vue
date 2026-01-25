@@ -49,7 +49,7 @@ const socialLinks = computed(() => {
       class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
     >
       <NuxtLink to="/" class="flex items-center gap-2">
-        <img v-if="logoUrl" :src="logoUrl" :alt="logoText" class="h-8 w-auto" />
+        <img v-if="logoUrl" :src="logoUrl" :alt="logoText" class="h-8 w-auto" >
         <span
           v-else
           class="text-xl font-serif font-bold tracking-tight text-stone-900"

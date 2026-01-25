@@ -9,6 +9,7 @@ const reviewSchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
+  const tenantId = await getTenantId(event);
   const id = getRouterParam(event, "id");
   if (!id) {
     throw createError({ statusCode: 400, message: "Review ID required" });
@@ -19,17 +20,21 @@ export default defineEventHandler(async (event) => {
 
   const prisma = usePrisma();
 
+  // Verify review belongs to tenant
+  const existingReview = await prisma.review.findFirst({
+    where: { id, tenantId },
+  });
+
+  if (!existingReview) {
+    throw createError({ statusCode: 404, message: "Review not found" });
+  }
+
   // If trying to set isFeatured to true, check the limit
   if (data.isFeatured === true) {
-    const currentReview = await prisma.review.findUnique({
-      where: { id },
-      select: { isFeatured: true },
-    });
-
     // Only check limit if the review is not already featured
-    if (!currentReview?.isFeatured) {
+    if (!existingReview.isFeatured) {
       const featuredCount = await prisma.review.count({
-        where: { isFeatured: true },
+        where: { tenantId, isFeatured: true },
       });
 
       if (featuredCount >= 6) {

@@ -12,13 +12,16 @@ const updateSchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
+  const tenantId = await getTenantId(event);
   const body = await readBody(event);
   const validated = updateSchema.parse(body);
 
   const prisma = usePrisma();
 
-  // Get or create hero (should only be one)
-  const existing = await prisma.landingHero.findFirst();
+  // Get or create hero for this tenant
+  const existing = await prisma.landingHero.findFirst({
+    where: { tenantId },
+  });
 
   let hero;
   if (existing) {
@@ -29,11 +32,12 @@ export default defineEventHandler(async (event) => {
   } else {
     hero = await prisma.landingHero.create({
       data: {
-        title: validated.title || "Welcome to wrPadi",
-        subtitle: validated.subtitle || "Authentic Indonesian Salmon Fish Soup",
-        description: validated.description || "Experience the rich flavors",
-        ctaText: validated.ctaText || "Book a Table",
-        ctaLink: validated.ctaLink || "/reservation",
+        tenantId,
+        title: validated.title || "Welcome",
+        subtitle: validated.subtitle || "Your Business",
+        description: validated.description || "Experience the best",
+        ctaText: validated.ctaText || "Get Started",
+        ctaLink: validated.ctaLink || "#",
         imageUrl: validated.imageUrl || "https://placehold.co/1200x600",
         promoText: validated.promoText,
         isActive: validated.isActive ?? true,

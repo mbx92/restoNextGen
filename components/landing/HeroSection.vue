@@ -52,7 +52,7 @@ const currentHero = computed(() => heroes.value[currentIndex.value] || {});
             <h1
               class="text-4xl font-serif font-bold tracking-tight text-stone-900 sm:text-6xl mb-6 min-h-[120px] sm:min-h-[140px]"
             >
-              {{ currentHero?.title || "Warm Your Soul with" }} <br />
+              {{ currentHero?.title || "Warm Your Soul with" }} <br >
               <span class="text-amber-700 italic">{{
                 currentHero?.subtitle || "Authentic Flavors"
               }}</span>
@@ -97,13 +97,13 @@ const currentHero = computed(() => heroes.value[currentIndex.value] || {});
               <button
                 v-for="(_, index) in heroes"
                 :key="index"
-                @click="goToSlide(index)"
                 :class="[
                   'h-2 rounded-full transition-all duration-300',
                   currentIndex === index
                     ? 'w-8 bg-amber-700'
                     : 'w-2 bg-stone-300 hover:bg-stone-400',
                 ]"
+                @click="goToSlide(index)"
               />
             </div>
           </div>
@@ -114,14 +114,14 @@ const currentHero = computed(() => heroes.value[currentIndex.value] || {});
             class="relative aspect-square w-full max-w-md mx-auto rounded-3xl overflow-hidden shadow-2xl rotate-3 hover:rotate-0 transition duration-500"
           >
             <img
+              :key="currentIndex"
               :src="
                 currentHero?.imageUrl ||
                 'https://images.unsplash.com/photo-1547592166-23acbe32e33f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
               "
               :alt="currentHero?.title || 'Salmon Soup'"
               class="h-full w-full object-cover transition-opacity duration-500"
-              :key="currentIndex"
-            />
+            >
             <div
               class="absolute inset-0 bg-gradient-to-t from-stone-900/40 to-transparent"
             />

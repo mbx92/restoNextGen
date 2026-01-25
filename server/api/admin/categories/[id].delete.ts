@@ -1,4 +1,5 @@
 export default defineEventHandler(async (event) => {
+  const tenantId = await getTenantId(event);
   const id = getRouterParam(event, "id");
   if (!id) {
     throw createError({ statusCode: 400, message: "Category ID required" });
@@ -6,9 +7,9 @@ export default defineEventHandler(async (event) => {
 
   const prisma = usePrisma();
 
-  // Check if category has items
-  const category = await prisma.category.findUnique({
-    where: { id },
+  // Check if category exists and belongs to tenant
+  const category = await prisma.category.findFirst({
+    where: { id, tenantId },
     include: { _count: { select: { items: true } } },
   });
 

@@ -1,26 +1,28 @@
-import prisma from '~/server/db/prisma'
+export default defineEventHandler(async (event) => {
+  const tenantId = await getTenantId(event);
+  const prisma = usePrisma();
 
-export default defineEventHandler(async () => {
   const [activeOrders, pendingReservations, activeTables] = await Promise.all([
     prisma.order.count({
       where: {
+        tenantId,
         status: {
-          notIn: ['COMPLETED', 'CANCELLED']
-        }
-      }
+          notIn: ["COMPLETED", "CANCELLED"],
+        },
+      },
     }),
     prisma.reservation.count({
-      where: { status: 'PENDING' }
+      where: { tenantId, status: "PENDING" },
     }),
     prisma.table.count({
-      where: { isActive: true }
-    })
-  ])
+      where: { tenantId, isActive: true },
+    }),
+  ]);
 
   return {
     activeOrders,
     pendingReservations,
     activeTables,
-    todayRevenue: 0 // TODO: Calculate from payments
-  }
-})
+    todayRevenue: 0, // TODO: Calculate from payments
+  };
+});

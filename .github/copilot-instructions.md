@@ -38,8 +38,35 @@ Build a modern restaurant web app for an Indonesian food restaurant featuring au
 
 ## UI Guidelines (Nuxt UI)
 
-- Use Nuxt UI components for: buttons, forms, modals, cards, navigation, and tables.- **Form fields**: Always add `class="w-full mb-4"` to UInput, UTextarea, USelect, and other form components for consistent full-width styling.- Keep a consistent design token approach (colors/spacing/radius). Don’t hardcode styles per-page.
+- Use Nuxt UI components for: buttons, forms, modals, cards, navigation, and tables.
+- **Form fields**: Always add `class="w-full mb-4"` to UInput, UTextarea, USelect, and other form components for consistent full-width styling.
+- Keep a consistent design token approach (colors/spacing/radius). Don't hardcode styles per-page.
 - Landing page sections should be built as small reusable components (Hero, FeaturedMenu, Favorites, Reviews, CTA).
+
+### Nuxt UI v4 Table API
+
+- **Always wrap UTable in `<ClientOnly>` to prevent hydration mismatches:**
+  ```vue
+  <ClientOnly>
+    <UTable :data="items" :columns="columns" />
+    <template #fallback>
+      <div class="p-4 text-center text-gray-500">Loading...</div>
+    </template>
+  </ClientOnly>
+  ```
+- Use `:data` prop (not `:rows`)
+- Column definition format: `{ accessorKey: 'field', header: 'Label' }` (not `key/label`)
+- Slot naming: `#columnName-cell` (not `#columnName-data`)
+- Access row data: `row.original.fieldName` (not `row.fieldName`)
+- Component names: `UDropdownMenu` (not `UDropdown`)
+- Valid colors: `primary`, `secondary`, `success`, `error`, `warning`, `info`, `neutral`, `purple` (defined in `app.config.ts`)
+- For custom colors: Add to `app.config.ts` under `ui.colors` mapping to Tailwind color names
+
+### SSR & Hydration
+
+- **Avoid hydration mismatches:** Wrap components that render differently on server/client (dates, random data, browser APIs) in `<ClientOnly>`
+- Date formatting should always be inside `ClientOnly` when displayed in tables or dynamic content
+- Tables with complex client-side interactions should be wrapped in `ClientOnly` entirely
 
 ## Domain Rules (Restaurant)
 

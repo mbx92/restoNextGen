@@ -7,16 +7,139 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model AdminUser {
+// ============================================================================
+// PLATFORM MODELS (Super Admin level)
+// ============================================================================
+
+model PlatformAdmin {
   id           String   @id @default(cuid())
   email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("admin") // "admin", "superadmin"
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([email])
+  @@map("platform_admin")
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+model Subscription {
+  id                 String             @id @default(cuid())
+  tenantId           String             @unique
+  plan               String // "free", "starter", "pro", "enterprise"
+  status             SubscriptionStatus @default(TRIAL)
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  trialEndsAt        DateTime?
+  cancelledAt        DateTime?
+  metadata           Json? // Payment gateway info, etc
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([status])
+  @@map("subscription")
+}
+
+// ============================================================================
+// BASE MODELS (Shared across all business types)
+// ============================================================================
+
+model Tenant {
+  id           String   @id @default(cuid())
+  slug         String   @unique // untuk subdomain/URL: warungpak.yourapp.com
+  name         String
+  businessType String // "restaurant", "retail", "salon"
+  ownerEmail   String   @default("") // Email pemilik tenant
+  ownerName    String   @default("") // Nama pemilik tenant
+  plan         String   @default("free") // "free", "starter", "pro"
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  subscription  Subscription?
+  adminUsers    AdminUser[]
+  siteSettings  SiteSettings[]
+  landingHeroes LandingHero[]
+  reviews       Review[]
+  businessInfo  BusinessInfo?
+  themeConfig   ThemeConfig?
+
+  // Restaurant module relations
+  categories   Category[]
+  menuItems    MenuItem[]
+  tables       Table[]
+  reservations Reservation[]
+  orders       Order[]
+  payments     Payment[]
+
+  @@index([ownerEmail])
+  @@map("tenant")
+}
+
+model BusinessInfo {
+  id           String   @id @default(cuid())
+  tenantId     String   @unique
+  name         String
+  description  String?
+  address      String?
+  phoneNumber  String?
+  email        String?
+  mapsUrl      String?
+  mapsEmbedUrl String?
+  metadata     Json? // Module-specific fields (openingHours, etc)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("business_info")
+}
+
+model ThemeConfig {
+  id             String   @id @default(cuid())
+  tenantId       String   @unique
+  primaryColor   String   @default("#16a34a")
+  secondaryColor String   @default("#ca8a04")
+  fontFamily     String   @default("Inter")
+  layoutVariant  String   @default("default") // "default", "minimal", "bold"
+  customCss      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("theme_config")
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  tenantId     String
+  email        String
   passwordHash String
   name         String
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, email])
   @@index([email])
+  @@map("admin_user")
 }
 
 enum OrderType {
@@ -54,20 +177,31 @@ enum PaymentStatus {
   REFUNDED
 }
 
+// ============================================================================
+// RESTAURANT MODULE (resto_* tables)
+// ============================================================================
+
 model Category {
   id        String   @id @default(cuid())
+  tenantId  String
   name      String
-  slug      String   @unique
+  slug      String
   sortOrder Int      @default(0)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  items MenuItem[]
+  tenant Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items  MenuItem[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("resto_category")
 }
 
 model MenuItem {
   id          String   @id @default(cuid())
+  tenantId    String
   categoryId  String?
   name        String
   description String?
@@ -79,28 +213,38 @@ model MenuItem {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   category   Category?   @relation(fields: [categoryId], references: [id])
   orderItems OrderItem[]
 
+  @@index([tenantId])
   @@index([categoryId])
   @@index([isFeatured])
+  @@map("resto_menu_item")
 }
 
 model Table {
   id        String   @id @default(cuid())
-  tableCode String   @unique
+  tenantId  String
+  tableCode String
   name      String?
   capacity  Int
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   reservations Reservation[]
   orders       Order[]
+
+  @@unique([tenantId, tableCode])
+  @@index([tenantId])
+  @@map("resto_table")
 }
 
 model Reservation {
   id            String            @id @default(cuid())
+  tenantId      String
   tableId       String?
   customerName  String
   customerPhone String
@@ -111,17 +255,21 @@ model Reservation {
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   table  Table?  @relation(fields: [tableId], references: [id])
   orders Order[]
 
+  @@index([tenantId])
   @@index([tableId])
   @@index([status])
   @@index([startAt])
+  @@map("resto_reservation")
 }
 
 model Order {
   id          String      @id @default(cuid())
-  orderNumber String      @unique
+  tenantId    String
+  orderNumber String
   type        OrderType
   status      OrderStatus @default(PLACED)
 
@@ -138,15 +286,19 @@ model Order {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   table       Table?       @relation(fields: [tableId], references: [id])
   reservation Reservation? @relation(fields: [reservationId], references: [id])
   items       OrderItem[]
   payments    Payment[]
 
+  @@unique([tenantId, orderNumber])
+  @@index([tenantId])
   @@index([tableId])
   @@index([reservationId])
   @@index([status])
   @@index([type])
+  @@map("resto_order")
 }
 
 model OrderItem {
@@ -163,15 +315,17 @@ model OrderItem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  order    Order    @relation(fields: [orderId], references: [id])
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   menuItem MenuItem @relation(fields: [menuItemId], references: [id])
 
   @@index([orderId])
   @@index([menuItemId])
+  @@map("resto_order_item")
 }
 
 model Payment {
   id       String          @id @default(cuid())
+  tenantId String
   orderId  String
   provider PaymentProvider @default(MIDTRANS)
   amount   Int
@@ -185,14 +339,22 @@ model Payment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  order Order @relation(fields: [orderId], references: [id])
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  order  Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
+  @@index([tenantId])
   @@index([orderId])
   @@index([status])
+  @@map("resto_payment")
 }
+
+// ============================================================================
+// CMS / LANDING PAGE MODELS (Base with tenantId)
+// ============================================================================
 
 model Review {
   id          String   @id @default(cuid())
+  tenantId    String
   authorName  String
   rating      Int
   comment     String?
@@ -201,13 +363,18 @@ model Review {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
   @@index([isPublished])
   @@index([isFeatured])
   @@index([rating])
+  @@map("review")
 }
 
 model LandingHero {
   id          String   @id @default(cuid())
+  tenantId    String
   title       String
   subtitle    String
   description String
@@ -218,53 +385,36 @@ model LandingHero {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-}
 
-// DEPRECATED: Use MenuItem.isFeatured instead
-model FeaturedMenuItem {
-  id          String   @id @default(cuid())
-  menuItemId  String?
-  name        String
-  description String
-  price       Int
-  imageUrl    String
-  sortOrder   Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-model RestaurantInfo {
-  id             String   @id @default(cuid())
-  name           String
-  description    String
-  address        String
-  phoneNumber    String
-  email          String
-  mapsUrl        String?
-  mapsEmbedUrl   String?
-  openingHours   String
-  updatedAt      DateTime @updatedAt
+  @@index([tenantId])
+  @@map("landing_hero")
 }
 
 model SiteSettings {
-  id        String   @id @default(cuid())
-  key       String   @unique // 'header' or 'footer'
-  
+  id       String @id @default(cuid())
+  tenantId String
+  key      String // 'header' or 'footer'
+
   // Header settings
-  logoUrl   String?
-  logoText  String?
-  
+  logoUrl  String?
+  logoText String?
+
   // Social media links
   facebookUrl  String?
   instagramUrl String?
   twitterUrl   String?
-  
+
   // Footer settings
   copyrightText String?
-  footerLinks   Json?   // JSON array of {label, url}
-  
+  footerLinks   Json? // JSON array of {label, url}
+
   updatedAt DateTime @updatedAt
-  
-  @@index([key])
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, key])
+  @@index([tenantId])
+  @@map("site_settings")
 }

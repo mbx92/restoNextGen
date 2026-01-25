@@ -1,7 +1,13 @@
-export default defineEventHandler(async () => {
+export default defineEventHandler(async (event) => {
+  const tenantId = await getTenantId(event);
   const prisma = usePrisma();
-  const items = await prisma.featuredMenuItem.findMany({
+
+  // Use MenuItem with isFeatured instead of deprecated FeaturedMenuItem
+  const items = await prisma.menuItem.findMany({
+    where: { tenantId, isFeatured: true },
+    include: { category: true },
     orderBy: { sortOrder: "asc" },
   });
+
   return items;
 });

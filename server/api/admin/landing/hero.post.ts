@@ -1,17 +1,18 @@
-import prisma from '~/server/db/prisma'
-
 export default defineEventHandler(async (event) => {
-  const body = await readBody(event)
-  
-  // Deactivate all existing heroes
+  const tenantId = await getTenantId(event);
+  const prisma = usePrisma();
+  const body = await readBody(event);
+
+  // Deactivate all existing heroes for this tenant
   await prisma.landingHero.updateMany({
-    where: { isActive: true },
-    data: { isActive: false }
-  })
-  
+    where: { tenantId, isActive: true },
+    data: { isActive: false },
+  });
+
   // Create new hero
   const hero = await prisma.landingHero.create({
     data: {
+      tenantId,
       title: body.title,
       subtitle: body.subtitle,
       description: body.description,
@@ -19,9 +20,9 @@ export default defineEventHandler(async (event) => {
       ctaLink: body.ctaLink,
       promoText: body.promoText,
       imageUrl: body.imageUrl,
-      isActive: true
-    }
-  })
-  
-  return hero
-})
+      isActive: true,
+    },
+  });
+
+  return hero;
+});

@@ -9,13 +9,17 @@ const reviewSchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
+  const tenantId = await getTenantId(event);
   const body = await readBody(event);
   const data = reviewSchema.parse(body);
 
   const prisma = usePrisma();
 
   const review = await prisma.review.create({
-    data,
+    data: {
+      tenantId,
+      ...data,
+    },
   });
 
   return review;

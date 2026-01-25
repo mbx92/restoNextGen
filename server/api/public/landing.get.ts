@@ -1,14 +1,32 @@
-export default defineEventHandler(async () => {
+export default defineEventHandler(async (event) => {
   const prisma = usePrisma();
 
+  // For now, get the default tenant (demo-restaurant)
+  // TODO: Resolve tenant from subdomain/header in production
+  const tenantSlug = getHeader(event, "x-tenant-slug") || "demo-restaurant";
+
+  const tenant = await prisma.tenant.findUnique({
+    where: { slug: tenantSlug, isActive: true },
+  });
+
+  if (!tenant) {
+    throw createError({
+      statusCode: 404,
+      statusMessage: "Tenant not found",
+    });
+  }
+
+  const tenantId = tenant.id;
+
   // Get all landing page data in one response
-  const [heroes, featuredItems, reviews, restaurantInfo] = await Promise.all([
+  const [heroes, featuredItems, reviews, businessInfo] = await Promise.all([
     prisma.landingHero.findMany({
-      where: { isActive: true },
+      where: { tenantId, isActive: true },
       orderBy: { createdAt: "desc" },
     }),
     prisma.menuItem.findMany({
       where: {
+        tenantId,
         isFeatured: true,
         isAvailable: true,
       },
@@ -19,19 +37,31 @@ export default defineEventHandler(async () => {
     }),
     prisma.review.findMany({
       where: {
+        tenantId,
         isPublished: true,
         isFeatured: true,
       },
       orderBy: { createdAt: "desc" },
       take: 6,
     }),
-    prisma.restaurantInfo.findFirst(),
+    prisma.businessInfo.findUnique({
+      where: { tenantId },
+    }),
   ]);
 
   return {
     heroes,
     featuredItems,
     reviews,
-    restaurantInfo,
+    businessInfo,
+    // Keep backward compatibility
+    restaurantInfo: businessInfo
+      ? {
+          ...businessInfo,
+          openingHours:
+            (businessInfo.metadata as { openingHours?: string })?.openingHours ||
+            "",
+        }
+      : null,
   };
 });

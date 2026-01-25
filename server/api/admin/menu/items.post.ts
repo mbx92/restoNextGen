@@ -12,6 +12,7 @@ const menuItemSchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
+  const tenantId = await getTenantId(event);
   const body = await readBody(event);
   const data = menuItemSchema.parse(body);
 
@@ -19,6 +20,7 @@ export default defineEventHandler(async (event) => {
 
   const menuItem = await prisma.menuItem.create({
     data: {
+      tenantId,
       categoryId: data.categoryId || null,
       name: data.name,
       description: data.description || null,

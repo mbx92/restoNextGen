@@ -12,9 +12,12 @@ export default defineEventHandler(async (event) => {
 
   const prisma = usePrisma();
 
-  // Find admin user
-  const admin = await prisma.adminUser.findUnique({
+  // Find admin user with tenant info
+  const admin = await prisma.adminUser.findFirst({
     where: { email },
+    include: {
+      tenant: true,
+    },
   });
 
   if (!admin || !admin.isActive) {
@@ -33,12 +36,15 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  // Set session
+  // Set session with tenant context
   await setUserSession(event, {
     user: {
       id: admin.id,
       email: admin.email,
       name: admin.name,
+      tenantId: admin.tenantId,
+      tenantSlug: admin.tenant.slug,
+      businessType: admin.tenant.businessType,
     },
   });
 
@@ -47,6 +53,9 @@ export default defineEventHandler(async (event) => {
       id: admin.id,
       email: admin.email,
       name: admin.name,
+      tenantId: admin.tenantId,
+      tenantSlug: admin.tenant.slug,
+      businessType: admin.tenant.businessType,
     },
   };
 });

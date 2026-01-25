@@ -8,6 +8,7 @@ const categorySchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
+  const tenantId = await getTenantId(event);
   const body = await readBody(event);
   const data = categorySchema.parse(body);
 
@@ -15,6 +16,7 @@ export default defineEventHandler(async (event) => {
 
   const category = await prisma.category.create({
     data: {
+      tenantId,
       name: data.name,
       slug: data.slug,
       sortOrder: data.sortOrder ?? 0,

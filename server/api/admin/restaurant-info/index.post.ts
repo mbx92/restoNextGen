@@ -12,27 +12,45 @@ const restaurantInfoSchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
+  const tenantId = await getTenantId(event);
   const body = await readBody(event);
   const data = restaurantInfoSchema.parse(body);
 
   const prisma = usePrisma();
 
-  // Find existing info
-  const existing = await prisma.restaurantInfo.findFirst();
+  // Upsert business info with openingHours in metadata
+  const info = await prisma.businessInfo.upsert({
+    where: { tenantId },
+    update: {
+      name: data.name,
+      description: data.description,
+      address: data.address,
+      phoneNumber: data.phoneNumber,
+      email: data.email,
+      mapsUrl: data.mapsUrl || null,
+      mapsEmbedUrl: data.mapsEmbedUrl || null,
+      metadata: {
+        openingHours: data.openingHours,
+      },
+    },
+    create: {
+      tenantId,
+      name: data.name,
+      description: data.description,
+      address: data.address,
+      phoneNumber: data.phoneNumber,
+      email: data.email,
+      mapsUrl: data.mapsUrl || null,
+      mapsEmbedUrl: data.mapsEmbedUrl || null,
+      metadata: {
+        openingHours: data.openingHours,
+      },
+    },
+  });
 
-  let info;
-  if (existing) {
-    // Update
-    info = await prisma.restaurantInfo.update({
-      where: { id: existing.id },
-      data,
-    });
-  } else {
-    // Create
-    info = await prisma.restaurantInfo.create({
-      data,
-    });
-  }
-
-  return info;
+  // Return with backward compatibility
+  return {
+    ...info,
+    openingHours: data.openingHours,
+  };
 });

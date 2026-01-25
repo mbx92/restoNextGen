@@ -130,7 +130,7 @@ const formatPrice = (price: number) => {
             :src="item.imageUrl"
             :alt="item.name"
             class="h-full w-full object-cover transition duration-500 group-hover:scale-110"
-          />
+          >
           <div
             v-else
             class="h-full w-full flex items-center justify-center bg-stone-100"

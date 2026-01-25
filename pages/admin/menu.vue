@@ -27,7 +27,7 @@ interface MenuItem {
 
 const {
   data: categories,
-  refresh: refreshCategories,
+  refresh: _refreshCategories,
   error: categoriesError,
 } = await useFetch<Category[]>("/api/admin/categories");
 const { data: items, refresh: refreshItems } = await useFetch<MenuItem[]>(

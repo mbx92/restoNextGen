@@ -17,9 +17,24 @@ export default defineEventHandler(async (event) => {
 
   const prisma = usePrisma();
 
+  // Resolve tenant from header (for public endpoints)
+  const tenantSlug = getHeader(event, "x-tenant-slug") || "demo-restaurant";
+
+  const tenant = await prisma.tenant.findUnique({
+    where: { slug: tenantSlug, isActive: true },
+  });
+
+  if (!tenant) {
+    throw createError({
+      statusCode: 404,
+      statusMessage: "Tenant not found",
+    });
+  }
+
   // Create review as pending (isPublished = false)
   const review = await prisma.review.create({
     data: {
+      tenantId: tenant.id,
       authorName: data.authorName,
       rating: data.rating,
       comment: data.comment,

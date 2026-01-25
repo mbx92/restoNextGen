@@ -6,11 +6,6 @@ const isOpen = ref(false);
 const navItems = [
   { label: "Dashboard", to: "/admin", icon: "i-heroicons-home" },
   {
-    label: "Orders Queue",
-    to: "/admin/orders",
-    icon: "i-heroicons-queue-list",
-  },
-  {
     label: "Reservations",
     to: "/admin/reservations",
     icon: "i-heroicons-calendar",

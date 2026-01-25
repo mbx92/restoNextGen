@@ -18,6 +18,7 @@ const settingsSchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
+  const tenantId = await getTenantId(event);
   const key = getRouterParam(event, "key");
 
   if (!key || (key !== "header" && key !== "footer")) {
@@ -33,9 +34,10 @@ export default defineEventHandler(async (event) => {
   const prisma = usePrisma();
 
   const settings = await prisma.siteSettings.upsert({
-    where: { key },
+    where: { tenantId_key: { tenantId, key } },
     update: data,
     create: {
+      tenantId,
       key,
       ...data,
     },

@@ -1,4 +1,5 @@
 export default defineEventHandler(async (event) => {
+  const tenantId = await getTenantId(event);
   const key = getRouterParam(event, "key");
 
   if (!key || (key !== "header" && key !== "footer")) {
@@ -11,7 +12,7 @@ export default defineEventHandler(async (event) => {
   const prisma = usePrisma();
 
   const settings = await prisma.siteSettings.findUnique({
-    where: { key },
+    where: { tenantId_key: { tenantId, key } },
   });
 
   if (!settings) {

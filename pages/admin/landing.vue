@@ -145,7 +145,7 @@ const deleteHero = async (id: string) => {
               :src="hero.imageUrl"
               :alt="hero.title"
               class="w-full h-full object-cover"
-            />
+            >
             <div v-else class="w-full h-full flex items-center justify-center">
               <UIcon
                 name="i-heroicons-photo"
