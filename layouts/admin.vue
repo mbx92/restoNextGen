@@ -4,7 +4,9 @@ const router = useRouter();
 const isOpen = ref(false);
 
 // Get business type from session
-const businessType = computed(() => session.value?.user?.businessType || "restaurant");
+const businessType = computed(
+  () => session.value?.user?.businessType || "restaurant",
+);
 
 // Dynamic navigation based on business type
 const getNavItems = (type: string) => {
@@ -18,27 +20,47 @@ const getNavItems = (type: string) => {
       to: "/admin/reservations",
       icon: "i-heroicons-calendar",
     },
-    { label: "Tables", to: "/admin/tables", icon: "i-heroicons-rectangle-group" },
-    { label: "Categories", to: "/admin/categories", icon: "i-heroicons-folder" },
+    {
+      label: "Tables",
+      to: "/admin/tables",
+      icon: "i-heroicons-rectangle-group",
+    },
+    {
+      label: "Categories",
+      to: "/admin/categories",
+      icon: "i-heroicons-folder",
+    },
     { label: "Menu Items", to: "/admin/menu", icon: "i-heroicons-book-open" },
     { label: "Orders", to: "/admin/orders", icon: "i-heroicons-shopping-cart" },
   ];
 
   const retailItems = [
     { label: "Products", to: "/admin/products", icon: "i-heroicons-cube" },
-    { label: "Inventory", to: "/admin/inventory", icon: "i-heroicons-archive-box" },
+    {
+      label: "Inventory",
+      to: "/admin/inventory",
+      icon: "i-heroicons-archive-box",
+    },
     { label: "POS", to: "/admin/pos", icon: "i-heroicons-calculator" },
   ];
 
   const salonItems = [
     { label: "Services", to: "/admin/services", icon: "i-heroicons-sparkles" },
-    { label: "Appointments", to: "/admin/appointments", icon: "i-heroicons-calendar" },
+    {
+      label: "Appointments",
+      to: "/admin/appointments",
+      icon: "i-heroicons-calendar",
+    },
     { label: "Staff", to: "/admin/staff", icon: "i-heroicons-user-group" },
   ];
 
   const commonItems = [
     { label: "Landing Page", to: "/admin/landing", icon: "i-heroicons-star" },
-    { label: "Featured Menu", to: "/admin/featured-menu", icon: "i-heroicons-sparkles" },
+    {
+      label: "Featured Menu",
+      to: "/admin/featured-menu",
+      icon: "i-heroicons-sparkles",
+    },
     {
       label: "Reviews",
       to: "/admin/reviews",
@@ -95,14 +117,22 @@ async function handleLogout() {
     <aside
       class="hidden lg:flex lg:w-64 lg:flex-col border-r border-stone-200 bg-white"
     >
-      <div class="flex h-16 items-center justify-between border-b border-stone-200 px-6">
+      <div
+        class="flex h-16 items-center justify-between border-b border-stone-200 px-6"
+      >
         <NuxtLink to="/admin" class="flex items-center gap-2">
           <span class="text-lg font-serif font-bold text-stone-900">
             Admin <span class="text-primary-600">Panel</span>
           </span>
         </NuxtLink>
         <UBadge
-          :color="businessType === 'restaurant' ? 'primary' : businessType === 'retail' ? 'secondary' : 'info'"
+          :color="
+            businessType === 'restaurant'
+              ? 'primary'
+              : businessType === 'retail'
+                ? 'secondary'
+                : 'info'
+          "
           variant="subtle"
           size="sm"
         >

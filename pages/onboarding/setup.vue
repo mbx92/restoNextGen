@@ -3,9 +3,7 @@
     <div class="container mx-auto px-4 py-16">
       <!-- Header -->
       <div class="mb-8 text-center">
-        <h1 class="mb-4 text-3xl font-bold text-gray-900">
-          Setup Bisnis Anda
-        </h1>
+        <h1 class="mb-4 text-3xl font-bold text-gray-900">Setup Bisnis Anda</h1>
         <p class="text-gray-600">
           Lengkapi informasi bisnis Anda untuk memulai
         </p>
@@ -261,13 +259,13 @@ const handleSubmit = async () => {
   errorMessage.value = "";
 
   try {
-    const response = await $fetch<{ success: boolean; tenant: { slug: string } }>(
-      "/api/onboarding/signup",
-      {
-        method: "POST",
-        body: form.value,
-      },
-    );
+    const response = await $fetch<{
+      success: boolean;
+      tenant: { slug: string };
+    }>("/api/onboarding/signup", {
+      method: "POST",
+      body: form.value,
+    });
 
     if (response.success) {
       toast.add({

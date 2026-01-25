@@ -23,7 +23,7 @@
                 v-model="form.primaryColor"
                 type="color"
                 class="h-10 w-20 cursor-pointer rounded border"
-              >
+              />
               <UInput
                 v-model="form.primaryColor"
                 placeholder="#16a34a"
@@ -42,7 +42,7 @@
                 v-model="form.secondaryColor"
                 type="color"
                 class="h-10 w-20 cursor-pointer rounded border"
-              >
+              />
               <UInput
                 v-model="form.secondaryColor"
                 placeholder="#ca8a04"
@@ -168,9 +168,7 @@
               :style="{ fontFamily: form.fontFamily }"
             >
               <p class="text-2xl font-bold">The Quick Brown Fox</p>
-              <p class="text-gray-600">
-                Jumps over the lazy dog. 1234567890
-              </p>
+              <p class="text-gray-600">Jumps over the lazy dog. 1234567890</p>
             </div>
           </div>
         </div>
@@ -235,7 +233,8 @@ const saveTheme = async () => {
   } catch (error) {
     toast.add({
       title: "Error",
-      description: error instanceof Error ? error.message : "Failed to save theme",
+      description:
+        error instanceof Error ? error.message : "Failed to save theme",
       color: "error",
     });
   } finally {
