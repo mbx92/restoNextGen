@@ -5,10 +5,10 @@ export default defineEventHandler(async () => {
   const [heroes, featuredItems, reviews, restaurantInfo] = await Promise.all([
     prisma.landingHero.findMany({
       where: { isActive: true },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     }),
     prisma.menuItem.findMany({
-      where: { 
+      where: {
         isFeatured: true,
         isAvailable: true,
       },

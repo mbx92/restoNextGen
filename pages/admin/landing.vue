@@ -107,9 +107,7 @@ const deleteHero = async (id: string) => {
         <h1 class="text-3xl font-serif font-bold text-stone-900">
           Landing Page
         </h1>
-        <p class="mt-2 text-stone-600">
-          Manage hero section content
-        </p>
+        <p class="mt-2 text-stone-600">Manage hero section content</p>
       </div>
     </div>
 
