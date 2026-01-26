@@ -1,5 +1,14 @@
 <script setup lang="ts">
-const { data: landingData } = await useFetch("/api/public/landing");
+// Get tenant slug from parent context or route
+const tenantSlug = inject<string>("tenantSlug", undefined);
+const route = useRoute();
+const slug = tenantSlug || (route.params.slug as string);
+
+// Fetch landing data with tenant parameter
+const { data: landingData } = await useFetch("/api/public/landing", {
+  query: slug ? { tenant: slug } : {},
+});
+
 const heroes = computed(() => landingData.value?.heroes || []);
 
 const currentIndex = ref(0);
@@ -42,18 +51,31 @@ const currentHero = computed(() => heroes.value[currentIndex.value] || {});
       <div class="grid gap-12 lg:grid-cols-2 lg:items-center min-h-[600px]">
         <div class="text-center lg:text-left">
           <div class="min-h-[400px] flex flex-col">
+            <!-- Campaign or Promo Badge -->
             <div
-              v-if="currentHero?.promoText"
+              v-if="currentHero?.campaign || currentHero?.promoText"
               class="inline-flex items-center rounded-full border border-stone-200 bg-white px-3 py-1 text-xs font-medium text-stone-600 mb-6 shadow-sm w-fit mx-auto lg:mx-0"
             >
-              <span class="flex h-2 w-2 rounded-full bg-amber-500 mr-2" />
-              {{ currentHero.promoText }}
+              <span class="flex h-2 w-2 rounded-full bg-theme-primary mr-2" />
+              <template v-if="currentHero?.campaign">
+                <UIcon name="i-heroicons-megaphone" class="w-3 h-3 mr-1" />
+                {{ currentHero.campaign.name }}
+                <span
+                  v-if="currentHero.campaign.discount"
+                  class="ml-1 font-bold text-theme-primary"
+                >
+                  {{ currentHero.campaign.discount }}% OFF
+                </span>
+              </template>
+              <template v-else>
+                {{ currentHero.promoText }}
+              </template>
             </div>
             <h1
               class="text-4xl font-serif font-bold tracking-tight text-stone-900 sm:text-6xl mb-6 min-h-[120px] sm:min-h-[140px]"
             >
-              {{ currentHero?.title || "Warm Your Soul with" }} <br >
-              <span class="text-amber-700 italic">{{
+              {{ currentHero?.title || "Warm Your Soul with" }} <br />
+              <span class="text-theme-primary italic">{{
                 currentHero?.subtitle || "Authentic Flavors"
               }}</span>
             </h1>
@@ -74,7 +96,8 @@ const currentHero = computed(() => heroes.value[currentIndex.value] || {});
                 size="xl"
                 color="neutral"
                 variant="solid"
-                class="w-full sm:w-auto justify-center rounded-xl !bg-amber-700 hover:!bg-amber-800 active:!bg-amber-900 !text-white font-medium px-8 transition-transform hover:-translate-y-0.5"
+                style="background-color: var(--primary-color); color: white"
+                class="w-full sm:w-auto justify-center rounded-xl font-medium px-8 transition-transform hover:-translate-y-0.5 hover:opacity-90"
               >
                 {{ currentHero?.ctaText || "Order Now" }}
               </UButton>
@@ -100,7 +123,7 @@ const currentHero = computed(() => heroes.value[currentIndex.value] || {});
                 :class="[
                   'h-2 rounded-full transition-all duration-300',
                   currentIndex === index
-                    ? 'w-8 bg-amber-700'
+                    ? 'w-8 bg-theme-primary'
                     : 'w-2 bg-stone-300 hover:bg-stone-400',
                 ]"
                 @click="goToSlide(index)"
@@ -121,7 +144,7 @@ const currentHero = computed(() => heroes.value[currentIndex.value] || {});
               "
               :alt="currentHero?.title || 'Salmon Soup'"
               class="h-full w-full object-cover transition-opacity duration-500"
-            >
+            />
             <div
               class="absolute inset-0 bg-gradient-to-t from-stone-900/40 to-transparent"
             />
@@ -131,7 +154,7 @@ const currentHero = computed(() => heroes.value[currentIndex.value] || {});
             class="absolute -bottom-6 -left-6 bg-white p-4 rounded-2xl shadow-xl max-w-[200px] border border-stone-100 hidden sm:block"
           >
             <div class="flex items-center gap-2 mb-1">
-              <div class="flex text-amber-400">★★★★★</div>
+              <div class="flex text-theme-primary">★★★★★</div>
             </div>
             <p class="text-xs text-stone-500 font-medium">
               "Best fish soup in town!"

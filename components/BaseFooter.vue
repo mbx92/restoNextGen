@@ -1,6 +1,20 @@
 <script setup lang="ts">
-const { data: siteSettings } = await useFetch("/api/public/site-settings");
-const { data: landingData } = await useFetch("/api/public/landing");
+// Get tenant slug from inject or global state
+const injectedTenantSlug = inject<string>("tenantSlug", undefined);
+const tenantSlugState = useState<string>("tenantSlug");
+const tenantSlug = computed(() => injectedTenantSlug || tenantSlugState.value);
+
+// Fetch data with tenant parameter
+const { data: siteSettings } = await useFetch("/api/public/site-settings", {
+  query: computed(() => (tenantSlug.value ? { tenant: tenantSlug.value } : {})),
+  key: computed(() => `footer-site-settings-${tenantSlug.value || "default"}`),
+  watch: [tenantSlug],
+});
+const { data: landingData } = await useFetch("/api/public/landing", {
+  query: computed(() => (tenantSlug.value ? { tenant: tenantSlug.value } : {})),
+  key: computed(() => `footer-landing-${tenantSlug.value || "default"}`),
+  watch: [tenantSlug],
+});
 
 const footerSettings = computed(() => siteSettings.value?.footer);
 const headerSettings = computed(() => siteSettings.value?.header);

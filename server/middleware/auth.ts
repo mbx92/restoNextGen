@@ -5,12 +5,11 @@ export default defineEventHandler(async (event) => {
     return;
   }
 
-  // Allow login, session, and logout endpoints (no auth required for login/session, logout needs session but no role check)
+  // Allow login, session, and logout endpoints (no auth required for login/session)
   if (
     path === "/api/admin/auth/login" ||
     path === "/api/admin/auth/session" ||
-    path === "/api/admin/auth/logout" ||
-    path === "/api/auth/login"
+    path === "/api/admin/auth/logout"
   ) {
     return;
   }
@@ -20,18 +19,15 @@ export default defineEventHandler(async (event) => {
   if (!session?.user) {
     throw createError({
       statusCode: 401,
-      statusMessage: "Unauthorized - Please login",
+      statusMessage: "Unauthorized - Please login as tenant admin",
     });
   }
 
-  // Check if user has staff role (not just customer)
-  const userRole = session.user.role;
-  const staffRoles = ["OWNER", "MANAGER", "CASHIER", "WAITER", "KITCHEN"];
-
-  if (!staffRoles.includes(userRole)) {
+  // Verify this is a tenant admin (has tenantId)
+  if (!session.user.tenantId) {
     throw createError({
       statusCode: 403,
-      statusMessage: "Forbidden - Staff access required",
+      statusMessage: "Forbidden - Tenant admin access required",
     });
   }
 });

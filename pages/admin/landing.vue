@@ -8,6 +8,7 @@ definePageMeta({
 
 interface Hero {
   id: string;
+  campaignId: string | null;
   title: string;
   subtitle: string;
   description: string;
@@ -16,15 +17,48 @@ interface Hero {
   promoText: string | null;
   imageUrl: string | null;
   isActive: boolean;
+  campaign?: {
+    id: string;
+    name: string;
+    type: string;
+    discount: number | null;
+  } | null;
+}
+
+interface Campaign {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  discount: number | null;
 }
 
 const { data: heroes, refresh: refreshHeroes } = await useFetch<Hero[]>(
   "/api/admin/landing/hero",
 );
 
+const { data: campaigns } = await useFetch<Campaign[]>(
+  "/api/admin/crm/campaigns",
+);
+
+const campaignOptions = computed(() => {
+  if (!campaigns.value || campaigns.value.length === 0) {
+    return [{ label: "No Campaign", value: null }];
+  }
+  const noCampaign = { label: "No Campaign", value: null };
+  const activeCampaigns = campaigns.value
+    .filter((c) => c.status === "ACTIVE" || c.status === "SCHEDULED")
+    .map((c) => ({
+      label: `${c.name} (${c.type})`,
+      value: c.id,
+    }));
+  return [noCampaign, ...activeCampaigns];
+});
+
 const isHeroModalOpen = ref(false);
 const editingHero = ref<Hero | null>(null);
 const heroForm = ref({
+  campaignId: null as string | null,
   title: "",
   subtitle: "",
   description: "",
@@ -38,6 +72,7 @@ const heroForm = ref({
 const openCreateHero = () => {
   editingHero.value = null;
   heroForm.value = {
+    campaignId: null,
     title: "",
     subtitle: "",
     description: "",
@@ -171,12 +206,24 @@ const deleteHero = async (id: string) => {
             <p class="text-sm text-stone-600 mb-2 line-clamp-2">
               {{ hero.description }}
             </p>
-            <div
-              v-if="hero.promoText"
-              class="inline-flex items-center gap-1 text-xs bg-amber-50 text-amber-700 px-2 py-1 rounded-full"
-            >
-              <UIcon name="i-heroicons-sparkles" class="w-3 h-3" />
-              {{ hero.promoText }}
+            <div class="flex flex-wrap gap-2 mb-2">
+              <div
+                v-if="hero.campaign"
+                class="inline-flex items-center gap-1 text-xs bg-primary-50 text-primary-700 px-2 py-1 rounded-full"
+              >
+                <UIcon name="i-heroicons-megaphone" class="w-3 h-3" />
+                {{ hero.campaign.name }}
+                <span v-if="hero.campaign.discount" class="font-semibold">
+                  {{ hero.campaign.discount }}% OFF
+                </span>
+              </div>
+              <div
+                v-if="hero.promoText"
+                class="inline-flex items-center gap-1 text-xs bg-amber-50 text-amber-700 px-2 py-1 rounded-full"
+              >
+                <UIcon name="i-heroicons-sparkles" class="w-3 h-3" />
+                {{ hero.promoText }}
+              </div>
             </div>
 
             <!-- Actions -->
@@ -242,6 +289,16 @@ const deleteHero = async (id: string) => {
     >
       <template #body>
         <div class="space-y-4">
+          <UFormField label="Campaign (Optional)" hint="Link this hero to an active campaign">
+            <USelectMenu
+              v-model="heroForm.campaignId"
+              :options="campaignOptions"
+              value-key="value"
+              placeholder="Select a campaign"
+              class="w-full"
+            />
+          </UFormField>
+
           <UFormField label="Title" required>
             <UInput
               v-model="heroForm.title"

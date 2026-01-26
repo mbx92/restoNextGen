@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { compare } from "bcrypt";
+import prisma from "~/server/db/prisma";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -9,8 +10,6 @@ const loginSchema = z.object({
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const { email, password } = loginSchema.parse(body);
-
-  const prisma = usePrisma();
 
   // Find admin user with tenant info
   const admin = await prisma.adminUser.findFirst({
@@ -37,6 +36,9 @@ export default defineEventHandler(async (event) => {
   }
 
   // Set session with tenant context
+  // Keep existing platform session if any
+  const currentSession = await getUserSession(event);
+  
   await setUserSession(event, {
     user: {
       id: admin.id,
@@ -47,6 +49,7 @@ export default defineEventHandler(async (event) => {
       tenantSlug: admin.tenant.slug,
       businessType: admin.tenant.businessType,
     },
+    platformAdmin: currentSession?.platformAdmin,
   });
 
   return {

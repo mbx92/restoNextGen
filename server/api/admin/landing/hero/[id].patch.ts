@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 const updateSchema = z.object({
+  campaignId: z.string().nullable().optional(),
   title: z.string().min(1).optional(),
   subtitle: z.string().min(1).optional(),
   description: z.string().min(1).optional(),

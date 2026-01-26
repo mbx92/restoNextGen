@@ -70,15 +70,17 @@ model Tenant {
   updatedAt    DateTime @updatedAt
 
   // Relations
-  subscription  Subscription?
-  adminUsers    AdminUser[]
-  users         User[]
-  auditLogs     AuditLog[]
-  siteSettings  SiteSettings[]
-  landingHeroes LandingHero[]
-  reviews       Review[]
-  businessInfo  BusinessInfo?
-  themeConfig   ThemeConfig?
+  subscription   Subscription?
+  adminUsers     AdminUser[]
+  users          User[]
+  auditLogs      AuditLog[]
+  siteSettings   SiteSettings[]
+  systemSettings SystemSettings?
+  landingHeroes  LandingHero[]
+  campaigns      Campaign[]
+  reviews        Review[]
+  businessInfo   BusinessInfo?
+  themeConfig    ThemeConfig?
 
   // Restaurant module relations
   categories   Category[]
@@ -184,12 +186,12 @@ enum PaymentStatus {
 }
 
 enum UserRole {
-  OWNER       // Full access to tenant
-  MANAGER     // Manage operations (orders, menu, staff)
-  CASHIER     // POS and payment operations
-  WAITER      // Create and manage orders
-  KITCHEN     // Kitchen display and order status
-  CUSTOMER    // Public user (place orders, reviews, reservations)
+  OWNER // Full access to tenant
+  MANAGER // Manage operations (orders, menu, staff)
+  CASHIER // POS and payment operations
+  WAITER // Create and manage orders
+  KITCHEN // Kitchen display and order status
+  CUSTOMER // Public user (place orders, reviews, reservations)
 }
 
 enum AuditAction {
@@ -204,16 +206,16 @@ enum AuditAction {
 }
 
 model AuditLog {
-  id          String      @id @default(cuid())
-  tenantId    String      // Which tenant this belongs to
-  userId      String?     // Who performed the action (null for system actions)
-  action      AuditAction // What action was performed
-  entity      String      // What entity was affected (Order, Menu, User, etc)
-  entityId    String?     // ID of the affected entity
-  oldData     Json?       // Previous state (for UPDATE/DELETE)
-  newData     Json?       // New state (for CREATE/UPDATE)
-  metadata    Json?       // Additional context (IP, user agent, etc)
-  createdAt   DateTime    @default(now())
+  id        String      @id @default(cuid())
+  tenantId  String // Which tenant this belongs to
+  userId    String? // Who performed the action (null for system actions)
+  action    AuditAction // What action was performed
+  entity    String // What entity was affected (Order, Menu, User, etc)
+  entityId  String? // ID of the affected entity
+  oldData   Json? // Previous state (for UPDATE/DELETE)
+  newData   Json? // New state (for CREATE/UPDATE)
+  metadata  Json? // Additional context (IP, user agent, etc)
+  createdAt DateTime    @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -227,17 +229,17 @@ model AuditLog {
 }
 
 model User {
-  id           String    @id @default(cuid())
-  tenantId     String?   // null for platform-level customers (cross-tenant)
+  id           String   @id @default(cuid())
+  tenantId     String? // null for platform-level customers (cross-tenant)
   email        String
-  passwordHash String?   // null for guest orders
+  passwordHash String? // null for guest orders
   name         String
   phoneNumber  String?
-  role         UserRole  @default(CUSTOMER)
-  isActive     Boolean   @default(true)
-  metadata     Json?     // Role-specific settings, preferences
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  role         UserRole @default(CUSTOMER)
+  isActive     Boolean  @default(true)
+  metadata     Json? // Role-specific settings, preferences
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   tenant       Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   orders       Order[]       @relation("OrderCreatedBy")
@@ -321,7 +323,7 @@ model Reservation {
   id            String            @id @default(cuid())
   tenantId      String
   tableId       String?
-  userId        String?   // Customer who made the reservation (optional for guest)
+  userId        String? // Customer who made the reservation (optional for guest)
   customerName  String
   customerPhone String
   partySize     Int
@@ -353,8 +355,8 @@ model Order {
 
   tableId       String?
   reservationId String?
-  userId        String?   // Customer who placed the order (optional for guest)
-  createdById   String?   // Staff who created/input the order (for staff-assisted orders)
+  userId        String? // Customer who placed the order (optional for guest)
+  createdById   String? // Staff who created/input the order (for staff-assisted orders)
 
   customerName  String?
   customerPhone String?
@@ -437,7 +439,7 @@ model Payment {
 model Review {
   id          String   @id @default(cuid())
   tenantId    String
-  userId      String?  // User who wrote the review (null for anonymous)
+  userId      String? // User who wrote the review (null for anonymous)
   authorName  String
   rating      Int
   comment     String?
@@ -457,9 +459,48 @@ model Review {
   @@map("review")
 }
 
+enum CampaignType {
+  DISCOUNT
+  POINTS
+  BUNDLE
+  FLASH_SALE
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  ENDED
+}
+
+model Campaign {
+  id             String         @id @default(cuid())
+  tenantId       String
+  name           String
+  type           CampaignType
+  status         CampaignStatus @default(DRAFT)
+  startDate      DateTime
+  endDate        DateTime
+  discount       Int? // Percentage discount
+  targetAudience String // "All Customers", "Loyalty Members", etc
+  description    String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  landingHeros LandingHero[]
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
+  @@map("campaign")
+}
+
 model LandingHero {
   id          String   @id @default(cuid())
   tenantId    String
+  campaignId  String? // Optional: Link to active campaign
   title       String
   subtitle    String
   description String
@@ -471,9 +512,11 @@ model LandingHero {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
+  @@index([campaignId])
   @@map("landing_hero")
 }
 
@@ -504,6 +547,27 @@ model SiteSettings {
   @@map("site_settings")
 }
 
+model SystemSettings {
+  id                      String   @id @default(cuid())
+  tenantId                String   @unique
+  enableTax               Boolean  @default(false)
+  taxRate                 Float    @default(0)
+  taxName                 String   @default("PPN")
+  currency                String   @default("IDR")
+  timezone                String   @default("Asia/Jakarta")
+  businessHours           Json? // Store opening hours
+  enableInventoryTracking Boolean  @default(true)
+  lowStockThreshold       Int      @default(10)
+  enableReservations      Boolean  @default(true)
+  enableOnlineOrdering    Boolean  @default(true)
+  updatedAt               DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("system_settings")
+}
+
 // ============================================================================
 // RBAC MODELS (Platform-managed Role-Based Access Control)
 // ============================================================================
@@ -518,9 +582,9 @@ model Permission {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  rolePermissions               RolePermission[]
-  businessTypePermissions       BusinessTypePermission[]
-  tenantPermissionOverrides     TenantPermissionOverride[]
+  rolePermissions           RolePermission[]
+  businessTypePermissions   BusinessTypePermission[]
+  tenantPermissionOverrides TenantPermissionOverride[]
 
   @@index([category])
   @@index([isSystem])
@@ -537,8 +601,8 @@ model Role {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  rolePermissions       RolePermission[]
-  businessTypeRoles     BusinessTypeRole[]
+  rolePermissions   RolePermission[]
+  businessTypeRoles BusinessTypeRole[]
 
   @@index([hierarchy])
   @@index([isSystem])

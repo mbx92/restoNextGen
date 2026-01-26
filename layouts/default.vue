@@ -1,5 +1,29 @@
 <script setup lang="ts">
 // Default layout for public pages
+
+// Get theme from global state (set by tenant landing page)
+const themeConfig = useState<{
+  primaryColor?: string;
+  secondaryColor?: string;
+} | null>("themeConfig");
+
+// Apply theme CSS variables if available
+watchEffect(() => {
+  if (themeConfig.value) {
+    useHead({
+      style: [
+        {
+          innerHTML: `
+            :root {
+              --primary-color: ${themeConfig.value.primaryColor || "#d97706"} !important;
+              --secondary-color: ${themeConfig.value.secondaryColor || "#92400e"} !important;
+            }
+          `,
+        },
+      ],
+    });
+  }
+});
 </script>
 
 <template>

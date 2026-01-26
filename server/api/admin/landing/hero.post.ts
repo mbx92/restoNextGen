@@ -13,6 +13,7 @@ export default defineEventHandler(async (event) => {
   const hero = await prisma.landingHero.create({
     data: {
       tenantId,
+      campaignId: body.campaignId || null,
       title: body.title,
       subtitle: body.subtitle,
       description: body.description,

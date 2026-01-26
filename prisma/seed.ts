@@ -225,13 +225,13 @@ async function main() {
     await prisma.themeConfig.create({
       data: {
         tenantId,
-        primaryColor: "#16a34a",
-        secondaryColor: "#ca8a04",
-        fontFamily: "Inter",
+        primaryColor: "#d97706", // restaurant-warm theme
+        secondaryColor: "#92400e",
+        fontFamily: "Lora",
         layoutVariant: "default",
       },
     });
-    console.log("✅ Theme config created");
+    console.log("✅ Theme config created (restaurant-warm)");
   }
 
   // ============================================================================
@@ -1148,17 +1148,17 @@ async function main() {
     });
     console.log("✅ Retail business info created");
 
-    // Create theme config for retail
+    // Create theme config for retail (retail-professional preset)
     await prisma.themeConfig.create({
       data: {
         tenantId: retailTenant.id,
-        primaryColor: "#2563eb", // blue-600
-        secondaryColor: "#7c3aed", // purple-600
+        primaryColor: "#2563eb", // retail-professional theme
+        secondaryColor: "#1e40af",
         fontFamily: "Inter",
-        layoutVariant: "default",
+        layoutVariant: "minimal",
       },
     });
-    console.log("✅ Retail theme config created");
+    console.log("✅ Retail theme config created (retail-professional)");
 
     // Create sample product categories
     const retailCategories = [
@@ -1200,7 +1200,6 @@ async function main() {
       {
         categoryId: createdRetailCategories[0].id, // Makanan & Minuman
         name: "Indomie Goreng",
-        slug: "indomie-goreng",
         description: "Mi instan goreng rasa original",
         price: 3500,
         photoUrl:
@@ -1209,7 +1208,6 @@ async function main() {
       {
         categoryId: createdRetailCategories[0].id,
         name: "Aqua 600ml",
-        slug: "aqua-600ml",
         description: "Air mineral kemasan 600ml",
         price: 4000,
         photoUrl:
@@ -1218,7 +1216,6 @@ async function main() {
       {
         categoryId: createdRetailCategories[1].id, // Rumah Tangga
         name: "Sabun Cuci Piring",
-        slug: "sabun-cuci-piring",
         description: "Sabun cuci piring formula anti bakteri",
         price: 12000,
         photoUrl:
@@ -1227,7 +1224,6 @@ async function main() {
       {
         categoryId: createdRetailCategories[2].id, // Kesehatan
         name: "Masker Kesehatan",
-        slug: "masker-kesehatan",
         description: "Masker 3 ply isi 10 pcs",
         price: 15000,
         photoUrl:
@@ -1236,7 +1232,6 @@ async function main() {
       {
         categoryId: createdRetailCategories[3].id, // Elektronik
         name: "Kabel USB Type-C",
-        slug: "kabel-usb-type-c",
         description: "Kabel charger USB Type-C 1 meter",
         price: 25000,
         photoUrl:
@@ -1250,7 +1245,6 @@ async function main() {
           tenantId: retailTenant.id,
           categoryId: product.categoryId,
           name: product.name,
-          slug: product.slug,
           description: product.description,
           price: product.price,
           photoUrl: product.photoUrl,

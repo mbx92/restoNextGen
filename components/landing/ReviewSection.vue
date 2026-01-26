@@ -1,5 +1,13 @@
 <script setup lang="ts">
-const { data: landingData } = await useFetch("/api/public/landing");
+// Get tenant slug from parent context or route
+const tenantSlug = inject<string>("tenantSlug", undefined);
+const route = useRoute();
+const slug = tenantSlug || (route.params.slug as string);
+
+// Fetch landing data with tenant parameter
+const { data: landingData } = await useFetch("/api/public/landing", {
+  query: slug ? { tenant: slug } : {},
+});
 
 const allReviews = computed(() => {
   return landingData.value?.reviews || [];
@@ -160,7 +168,7 @@ onMounted(() => {
               :key="review.id"
               class="rounded-2xl bg-white p-8 shadow-sm border border-stone-100/50 flex flex-col min-h-[280px]"
             >
-              <div class="flex items-center gap-1 text-amber-400 mb-4">
+              <div class="flex items-center gap-1 text-theme-primary mb-4">
                 <UIcon
                   v-for="i in 5"
                   :key="i"

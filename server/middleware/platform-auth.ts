@@ -10,10 +10,10 @@ export default defineEventHandler(async (event) => {
   if (path.startsWith("/api/platform")) {
     const session = await getUserSession(event);
 
-    if (!session?.user?.isPlatformAdmin) {
+    if (!session?.platformAdmin) {
       throw createError({
         statusCode: 401,
-        statusMessage: "Unauthorized: Platform admin access required",
+        statusMessage: "Unauthorized: Please login as platform admin",
       });
     }
   }

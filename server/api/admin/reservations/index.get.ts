@@ -1,3 +1,4 @@
+import prisma from "~/server/db/prisma";
 import { requireUser } from "~/server/utils/auth-helpers";
 
 /**

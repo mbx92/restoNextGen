@@ -1,5 +1,13 @@
 <script setup lang="ts">
-const { data: landingData } = await useFetch("/api/public/landing");
+// Get tenant slug from parent context or route
+const tenantSlug = inject<string>("tenantSlug", undefined);
+const route = useRoute();
+const slug = tenantSlug || (route.params.slug as string);
+
+// Fetch landing data with tenant parameter
+const { data: landingData } = await useFetch("/api/public/landing", {
+  query: slug ? { tenant: slug } : {},
+});
 const featuredItems = computed(() => landingData.value?.featuredItems || []);
 
 function formatPrice(price: number) {
@@ -27,7 +35,7 @@ function formatPrice(price: number) {
         <div
           v-for="item in featuredItems"
           :key="item.id"
-          class="group relative flex flex-col overflow-hidden rounded-2xl bg-stone-50 border border-stone-100 transition hover:shadow-lg hover:border-amber-200"
+          class="group relative flex flex-col overflow-hidden rounded-2xl bg-stone-50 border border-stone-100 transition hover:shadow-lg hover:border-theme-primary"
         >
           <div class="aspect-[4/3] w-full overflow-hidden bg-stone-200">
             <img
@@ -37,12 +45,12 @@ function formatPrice(price: number) {
               "
               :alt="item.name"
               class="h-full w-full object-cover transition duration-500 group-hover:scale-110"
-            >
+            />
           </div>
           <div class="flex flex-1 flex-col p-6">
             <div class="flex justify-between items-start mb-2">
               <h3 class="text-lg font-bold text-stone-900">{{ item.name }}</h3>
-              <p class="font-medium text-amber-700">
+              <p class="font-medium text-theme-primary">
                 {{ formatPrice(item.price) }}
               </p>
             </div>

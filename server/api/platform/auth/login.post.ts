@@ -35,13 +35,16 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 
   // Set session for platform admin
+  // Keep existing tenant session if any
+  const currentSession = await getUserSession(event);
+  
   await setUserSession(event, {
-    user: {
+    user: currentSession?.user?.tenantId ? currentSession.user : undefined,
+    platformAdmin: {
       id: admin.id,
       email: admin.email,
       name: admin.name,
       role: admin.role,
-      isPlatformAdmin: true,
     },
   });
 

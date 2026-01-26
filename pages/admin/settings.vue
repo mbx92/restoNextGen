@@ -29,6 +29,9 @@ const footerForm = ref({
 const isSavingHeader = ref(false);
 const isSavingFooter = ref(false);
 
+// Initialize toast at top-level
+const toast = useToast();
+
 // Load header settings
 watch(
   headerSettings,
@@ -70,7 +73,6 @@ const saveHeader = async () => {
     });
     await refreshHeader();
 
-    const toast = useToast();
     toast.add({
       title: "Success",
       description: "Header settings updated",
@@ -78,7 +80,6 @@ const saveHeader = async () => {
     });
   } catch (error) {
     console.error("Failed to save header:", error);
-    const toast = useToast();
     toast.add({
       title: "Error",
       description: "Failed to update header settings",
@@ -98,7 +99,6 @@ const saveFooter = async () => {
     });
     await refreshFooter();
 
-    const toast = useToast();
     toast.add({
       title: "Success",
       description: "Footer settings updated",
@@ -106,7 +106,6 @@ const saveFooter = async () => {
     });
   } catch (error) {
     console.error("Failed to save footer:", error);
-    const toast = useToast();
     toast.add({
       title: "Error",
       description: "Failed to update footer settings",

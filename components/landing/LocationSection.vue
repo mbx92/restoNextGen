@@ -1,5 +1,13 @@
 <script setup lang="ts">
-const { data: landingData } = await useFetch("/api/public/landing");
+// Get tenant slug from parent context or route
+const tenantSlug = inject<string>("tenantSlug", undefined);
+const route = useRoute();
+const slug = tenantSlug || (route.params.slug as string);
+
+// Fetch landing data with tenant parameter
+const { data: landingData } = await useFetch("/api/public/landing", {
+  query: slug ? { tenant: slug } : {},
+});
 
 const restaurantInfo = computed(() => {
   return landingData.value?.restaurantInfo;
@@ -45,7 +53,7 @@ const mapsLink = computed(() => {
                 <div class="p-2 bg-stone-800 rounded-lg">
                   <UIcon
                     name="i-heroicons-map-pin"
-                    class="w-6 h-6 text-amber-500"
+                    class="w-6 h-6 text-theme-primary"
                   />
                 </div>
                 <div>
@@ -60,7 +68,7 @@ const mapsLink = computed(() => {
                 <div class="p-2 bg-stone-800 rounded-lg">
                   <UIcon
                     name="i-heroicons-clock"
-                    class="w-6 h-6 text-amber-500"
+                    class="w-6 h-6 text-theme-primary"
                   />
                 </div>
                 <div>
@@ -78,7 +86,7 @@ const mapsLink = computed(() => {
                 <div class="p-2 bg-stone-800 rounded-lg">
                   <UIcon
                     name="i-heroicons-phone"
-                    class="w-6 h-6 text-amber-500"
+                    class="w-6 h-6 text-theme-primary"
                   />
                 </div>
                 <div>
@@ -93,7 +101,7 @@ const mapsLink = computed(() => {
                 <div class="p-2 bg-stone-800 rounded-lg">
                   <UIcon
                     name="i-heroicons-envelope"
-                    class="w-6 h-6 text-amber-500"
+                    class="w-6 h-6 text-theme-primary"
                   />
                 </div>
                 <div>
@@ -110,7 +118,7 @@ const mapsLink = computed(() => {
                 :to="mapsLink"
                 target="_blank"
                 color="primary"
-                class="flex-1 bg-amber-600 hover:bg-amber-700 text-white rounded-xl"
+                class="flex-1 bg-theme-primary hover:opacity-90 text-white rounded-xl"
               >
                 Get Directions
               </UButton>

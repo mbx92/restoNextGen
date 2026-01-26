@@ -62,6 +62,27 @@ const navItems = computed(() => {
       icon: "i-heroicons-shopping-cart",
       permission: "VIEW_ALL_ORDERS",
     },
+    {
+      label: "CRM",
+      icon: "i-heroicons-user-group",
+      children: [
+        {
+          label: "Customers",
+          to: "/admin/crm/customers",
+          icon: "i-heroicons-users",
+        },
+        {
+          label: "Loyalty",
+          to: "/admin/crm/loyalty",
+          icon: "i-heroicons-gift",
+        },
+        {
+          label: "Campaigns",
+          to: "/admin/crm/campaigns",
+          icon: "i-heroicons-megaphone",
+        },
+      ],
+    },
   ];
 
   const retailItems = [
@@ -71,7 +92,32 @@ const navItems = computed(() => {
       to: "/admin/inventory",
       icon: "i-heroicons-archive-box",
     },
-    { label: "POS", to: "/admin/pos", icon: "i-heroicons-calculator" },
+    {
+      label: "Transactions",
+      to: "/admin/transactions",
+      icon: "i-heroicons-receipt-percent",
+    },
+    {
+      label: "CRM",
+      icon: "i-heroicons-users",
+      children: [
+        {
+          label: "Customers",
+          to: "/admin/crm/customers",
+          icon: "i-heroicons-user-group",
+        },
+        {
+          label: "Loyalty",
+          to: "/admin/crm/loyalty",
+          icon: "i-heroicons-gift",
+        },
+        {
+          label: "Campaigns",
+          to: "/admin/crm/campaigns",
+          icon: "i-heroicons-megaphone",
+        },
+      ],
+    },
   ];
 
   const salonItems = [
@@ -92,40 +138,53 @@ const navItems = computed(() => {
       permission: "VIEW_USERS",
     },
     {
-      label: "Landing Page",
-      to: "/admin/landing",
-      icon: "i-heroicons-star",
+      label: "CMS",
+      icon: "i-heroicons-document-text",
       permission: "MANAGE_LANDING",
+      children: [
+        {
+          label: "Landing Page",
+          to: "/admin/landing",
+          icon: "i-heroicons-star",
+        },
+        {
+          label: "Featured Menu",
+          to: "/admin/featured-menu",
+          icon: "i-heroicons-sparkles",
+        },
+        {
+          label: "Reviews",
+          to: "/admin/reviews",
+          icon: "i-heroicons-chat-bubble-left-right",
+        },
+        {
+          label: "Location",
+          to: "/admin/location",
+          icon: "i-heroicons-map-pin",
+        },
+      ],
     },
     {
-      label: "Featured Menu",
-      to: "/admin/featured-menu",
-      icon: "i-heroicons-sparkles",
-      permission: "MANAGE_LANDING",
-    },
-    {
-      label: "Reviews",
-      to: "/admin/reviews",
-      icon: "i-heroicons-chat-bubble-left-right",
-      permission: "MODERATE_REVIEWS",
-    },
-    {
-      label: "Location",
-      to: "/admin/location",
-      icon: "i-heroicons-map-pin",
-      permission: "MANAGE_SETTINGS",
-    },
-    {
-      label: "Theme",
-      to: "/admin/theme",
-      icon: "i-heroicons-paint-brush",
-      permission: "MANAGE_THEME",
-    },
-    {
-      label: "Site Settings",
-      to: "/admin/settings",
+      label: "Settings",
       icon: "i-heroicons-cog-6-tooth",
       permission: "MANAGE_SETTINGS",
+      children: [
+        {
+          label: "System Settings",
+          to: "/admin/system-settings",
+          icon: "i-heroicons-cog-8-tooth",
+        },
+        {
+          label: "Theme",
+          to: "/admin/theme",
+          icon: "i-heroicons-paint-brush",
+        },
+        {
+          label: "Site Settings",
+          to: "/admin/settings",
+          icon: "i-heroicons-adjustments-horizontal",
+        },
+      ],
     },
   ];
 
@@ -152,6 +211,34 @@ async function handleLogout() {
   await $fetch("/api/admin/auth/logout", { method: "POST" });
   await router.push("/login");
 }
+
+// Track expanded menu groups - only one can be open at a time
+const expandedMenu = ref<string | null>(null);
+
+const toggleMenu = (label: string) => {
+  // Toggle: if clicking the same menu, close it; otherwise open the new one
+  expandedMenu.value = expandedMenu.value === label ? null : label;
+};
+
+const isMenuExpanded = (label: string) => {
+  return expandedMenu.value === label;
+};
+
+// Check if any child route is active (for highlighting only, not for auto-expand on click)
+const route = useRoute();
+const isChildActive = (children: any[]) => {
+  return children?.some((child: any) => route.path === child.to);
+};
+
+// Auto-expand menu if child is active on initial load only
+onMounted(() => {
+  for (const item of navItems.value) {
+    if (item.children && isChildActive(item.children)) {
+      expandedMenu.value = item.label;
+      break;
+    }
+  }
+});
 </script>
 
 <template>
@@ -200,16 +287,56 @@ async function handleLogout() {
       </div>
 
       <nav class="flex-1 space-y-1 p-4 overflow-y-auto">
-        <NuxtLink
-          v-for="item in navItems"
-          :key="item.to"
-          :to="item.to"
-          class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-stone-600 transition hover:bg-primary-50 hover:text-primary-900"
-          active-class="!bg-primary-100 !text-primary-900"
-        >
-          <UIcon :name="item.icon" class="h-5 w-5" />
-          {{ item.label }}
-        </NuxtLink>
+        <template v-for="item in navItems" :key="item.label">
+          <!-- Regular menu item -->
+          <NuxtLink
+            v-if="!item.children"
+            :to="item.to"
+            class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-stone-600 transition hover:bg-primary-50 hover:text-primary-900"
+            active-class="!bg-primary-100 !text-primary-900"
+          >
+            <UIcon :name="item.icon" class="h-5 w-5" />
+            {{ item.label }}
+          </NuxtLink>
+
+          <!-- Collapsible menu group -->
+          <div v-else>
+            <button
+              class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition"
+              :class="[
+                isMenuExpanded(item.label) || isChildActive(item.children)
+                  ? 'bg-primary-50 text-primary-900'
+                  : 'text-stone-600 hover:bg-primary-50 hover:text-primary-900',
+              ]"
+              @click="toggleMenu(item.label)"
+            >
+              <div class="flex items-center gap-3">
+                <UIcon :name="item.icon" class="h-5 w-5" />
+                {{ item.label }}
+              </div>
+              <UIcon
+                name="i-heroicons-chevron-down"
+                class="h-4 w-4 transition-transform"
+                :class="{ 'rotate-180': isMenuExpanded(item.label) }"
+              />
+            </button>
+            <div
+              v-show="isMenuExpanded(item.label)"
+              class="mt-1 ml-4 space-y-1 border-l-2 border-stone-200 pl-3"
+            >
+              <NuxtLink
+                v-for="child in item.children"
+                :key="child.to"
+                :to="child.to"
+                class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-stone-500 transition hover:bg-primary-50 hover:text-primary-900"
+                active-class="!bg-primary-100 !text-primary-900"
+              >
+                <UIcon :name="child.icon" class="h-4 w-4" />
+                {{ child.label }}
+              </NuxtLink>
+            </div>
+          </div>
+        </template>
       </nav>
 
       <div class="border-t border-stone-200 p-4 space-y-2">
@@ -269,17 +396,58 @@ async function handleLogout() {
         </div>
 
         <nav class="space-y-1">
-          <NuxtLink
-            v-for="item in navItems"
-            :key="item.to"
-            :to="item.to"
-            class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-stone-600 transition hover:bg-primary-50 hover:text-primary-900"
-            active-class="!bg-primary-100 !text-primary-900"
-            @click="isOpen = false"
-          >
-            <UIcon :name="item.icon" class="h-5 w-5" />
-            {{ item.label }}
-          </NuxtLink>
+          <template v-for="item in navItems" :key="item.label">
+            <!-- Regular menu item -->
+            <NuxtLink
+              v-if="!item.children"
+              :to="item.to"
+              class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-stone-600 transition hover:bg-primary-50 hover:text-primary-900"
+              active-class="!bg-primary-100 !text-primary-900"
+              @click="isOpen = false"
+            >
+              <UIcon :name="item.icon" class="h-5 w-5" />
+              {{ item.label }}
+            </NuxtLink>
+
+            <!-- Collapsible menu group -->
+            <div v-else>
+              <button
+                class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition"
+                :class="[
+                  isMenuExpanded(item.label) || isChildActive(item.children)
+                    ? 'bg-primary-50 text-primary-900'
+                    : 'text-stone-600 hover:bg-primary-50 hover:text-primary-900',
+                ]"
+                @click="toggleMenu(item.label)"
+              >
+                <div class="flex items-center gap-3">
+                  <UIcon :name="item.icon" class="h-5 w-5" />
+                  {{ item.label }}
+                </div>
+                <UIcon
+                  name="i-heroicons-chevron-down"
+                  class="h-4 w-4 transition-transform"
+                  :class="{ 'rotate-180': isMenuExpanded(item.label) }"
+                />
+              </button>
+              <div
+                v-show="isMenuExpanded(item.label)"
+                class="mt-1 ml-4 space-y-1 border-l-2 border-stone-200 pl-3"
+              >
+                <NuxtLink
+                  v-for="child in item.children"
+                  :key="child.to"
+                  :to="child.to"
+                  class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-stone-500 transition hover:bg-primary-50 hover:text-primary-900"
+                  active-class="!bg-primary-100 !text-primary-900"
+                  @click="isOpen = false"
+                >
+                  <UIcon :name="child.icon" class="h-4 w-4" />
+                  {{ child.label }}
+                </NuxtLink>
+              </div>
+            </div>
+          </template>
         </nav>
 
         <div
