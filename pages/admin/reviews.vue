@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const { confirm } = useConfirmDialog();
+
 definePageMeta({
   layout: "admin",
   middleware: ["admin-auth"],
@@ -66,7 +68,13 @@ const save = async () => {
 };
 
 const deleteReview = async (id: string) => {
-  if (!confirm("Are you sure you want to delete this review?")) return;
+  const confirmed = await confirm({
+    title: "Delete Review",
+    message: "Are you sure you want to delete this review?",
+    confirmText: "Delete",
+    confirmColor: "error",
+  });
+  if (!confirmed) return;
 
   try {
     await $fetch(`/api/admin/reviews/${id}`, {

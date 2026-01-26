@@ -100,6 +100,11 @@ const menuItems = [
     icon: "i-heroicons-building-storefront",
   },
   {
+    label: "RBAC",
+    to: "/platform/rbac",
+    icon: "i-heroicons-shield-check",
+  },
+  {
     label: "Subscriptions",
     to: "/platform/subscriptions",
     icon: "i-heroicons-credit-card",

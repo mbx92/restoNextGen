@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const { confirm } = useConfirmDialog();
+
 definePageMeta({
   layout: "admin",
   middleware: ["admin-auth"],
@@ -78,7 +80,13 @@ const deleteCategory = async (category: Category) => {
     return;
   }
 
-  if (!confirm(`Delete category "${category.name}"?`)) return;
+  const confirmed = await confirm({
+    title: "Delete Category",
+    message: `Are you sure you want to delete "${category.name}"?`,
+    confirmText: "Delete",
+    confirmColor: "error",
+  });
+  if (!confirmed) return;
 
   try {
     await $fetch(`/api/admin/categories/${category.id}`, {

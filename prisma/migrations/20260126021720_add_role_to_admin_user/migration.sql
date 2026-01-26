@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "admin_user" ADD COLUMN     "role" TEXT NOT NULL DEFAULT 'OWNER';

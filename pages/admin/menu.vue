@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+const { confirm } = useConfirmDialog();
 
 definePageMeta({
   layout: "admin",
@@ -110,7 +111,13 @@ const saveItem = async () => {
 };
 
 const deleteItem = async (item: MenuItem) => {
-  if (!confirm(`Delete "${item.name}"?`)) return;
+  const confirmed = await confirm({
+    title: "Delete Menu Item",
+    message: `Are you sure you want to delete "${item.name}"?`,
+    confirmText: "Delete",
+    confirmColor: "error",
+  });
+  if (!confirmed) return;
 
   try {
     await $fetch(`/api/admin/menu/${item.id}`, {
@@ -201,7 +208,7 @@ const groupedItems = computed(() => {
                   :src="item.photoUrl"
                   :alt="item.name"
                   class="w-full h-full object-cover"
-                >
+                />
               </div>
               <div
                 v-else

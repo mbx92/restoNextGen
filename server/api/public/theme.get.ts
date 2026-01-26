@@ -1,10 +1,12 @@
-import { getTenantContext } from "~/server/utils/tenant";
-
 export default defineEventHandler(async (event) => {
-  const tenantContext = await getTenantContext(event);
+  const prisma = usePrisma();
 
-  if (!tenantContext) {
-    // Return default theme
+  // Try to get tenant from session (optional for public routes)
+  const session = await getUserSession(event);
+  const tenantId = session?.user?.tenantId;
+
+  // If no tenant context, return default theme
+  if (!tenantId) {
     return {
       primaryColor: "#16a34a",
       secondaryColor: "#ca8a04",
@@ -13,10 +15,8 @@ export default defineEventHandler(async (event) => {
     };
   }
 
-  const prisma = usePrisma();
-
   const themeConfig = await prisma.themeConfig.findUnique({
-    where: { tenantId: tenantContext.id },
+    where: { tenantId },
   });
 
   if (!themeConfig) {

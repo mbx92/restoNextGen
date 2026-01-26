@@ -1,6 +1,12 @@
+import { requireUser } from "~/server/utils/auth-helpers";
+
+/**
+ * GET /api/admin/dashboard/stats
+ * Get dashboard statistics
+ */
 export default defineEventHandler(async (event) => {
-  const tenantId = await getTenantId(event);
-  const prisma = usePrisma();
+  const session = await requireUser(event);
+  const tenantId = session.user.tenantId!;
 
   const [activeOrders, pendingReservations, activeTables] = await Promise.all([
     prisma.order.count({

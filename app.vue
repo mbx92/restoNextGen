@@ -3,6 +3,8 @@
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
+    <!-- Global Confirm Dialog -->
+    <ConfirmDialog />
   </UApp>
 </template>
 

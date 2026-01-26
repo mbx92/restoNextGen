@@ -101,17 +101,27 @@ useSeoMeta({
           </div>
 
           <!-- Name -->
-          <UFormGroup label="Your Name" required>
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              Your Name <span class="text-red-500">*</span>
+            </label>
             <UInput
               v-model="form.authorName"
               placeholder="e.g., John Doe"
               class="w-full mb-4"
               required
             />
-          </UFormGroup>
+          </div>
 
           <!-- Comment -->
-          <UFormGroup label="Your Review" required>
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              Your Review <span class="text-red-500">*</span>
+            </label>
             <UTextarea
               v-model="form.comment"
               placeholder="Tell us about your experience..."
@@ -119,12 +129,8 @@ useSeoMeta({
               class="w-full mb-4"
               required
             />
-            <template #help>
-              <span class="text-xs text-stone-400">
-                Minimum 10 characters
-              </span>
-            </template>
-          </UFormGroup>
+            <p class="text-xs text-stone-400">Minimum 10 characters</p>
+          </div>
 
           <!-- Submit -->
           <div class="flex gap-3">

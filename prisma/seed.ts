@@ -112,6 +112,81 @@ async function main() {
   }
 
   // ============================================================================
+  // 2b. Create sample users with different roles
+  // ============================================================================
+  const users = [
+    {
+      email: "owner@wrpadi.com",
+      name: "Restaurant Owner",
+      role: "OWNER" as const,
+      password: "owner123",
+      phoneNumber: "+62 812 1111 1111",
+    },
+    {
+      email: "manager@wrpadi.com",
+      name: "Floor Manager",
+      role: "MANAGER" as const,
+      password: "manager123",
+      phoneNumber: "+62 812 2222 2222",
+    },
+    {
+      email: "cashier@wrpadi.com",
+      name: "Cashier Staff",
+      role: "CASHIER" as const,
+      password: "cashier123",
+      phoneNumber: "+62 812 3333 3333",
+    },
+    {
+      email: "waiter@wrpadi.com",
+      name: "Waiter Staff",
+      role: "WAITER" as const,
+      password: "waiter123",
+      phoneNumber: "+62 812 4444 4444",
+    },
+    {
+      email: "kitchen@wrpadi.com",
+      name: "Kitchen Staff",
+      role: "KITCHEN" as const,
+      password: "kitchen123",
+      phoneNumber: "+62 812 5555 5555",
+    },
+    {
+      email: "customer@wrpadi.com",
+      name: "Regular Customer",
+      role: "CUSTOMER" as const,
+      password: "customer123",
+      phoneNumber: "+62 812 9999 9999",
+    },
+  ];
+
+  for (const userData of users) {
+    const existingUser = await prisma.user.findUnique({
+      where: {
+        tenantId_email: {
+          tenantId,
+          email: userData.email,
+        },
+      },
+    });
+
+    if (!existingUser) {
+      const passwordHash = await hashPassword(userData.password);
+      await prisma.user.create({
+        data: {
+          tenantId,
+          email: userData.email,
+          passwordHash,
+          name: userData.name,
+          role: userData.role,
+          phoneNumber: userData.phoneNumber,
+          isActive: true,
+        },
+      });
+      console.log(`✅ User created: ${userData.email} (${userData.role})`);
+    }
+  }
+
+  // ============================================================================
   // 3. Business Info (generic, with metadata for restaurant-specific fields)
   // ============================================================================
   const existingInfo = await prisma.businessInfo.findUnique({
@@ -345,8 +420,7 @@ async function main() {
           description:
             "Our signature salmon soup with secret broth recipe, fresh vegetables, and tender salmon fillet",
           price: 65000,
-          photoUrl:
-            "https://images.unsplash.com/photo-1559339352-11d035aa65de",
+          photoUrl: "https://images.unsplash.com/photo-1559339352-11d035aa65de",
           isAvailable: true,
           isFeatured: true,
           sortOrder: 1,
@@ -358,8 +432,7 @@ async function main() {
           description:
             "Traditional salmon soup with a spicy kick, perfect for spice lovers",
           price: 70000,
-          photoUrl:
-            "https://images.unsplash.com/photo-1547592166-23ac45744acd",
+          photoUrl: "https://images.unsplash.com/photo-1547592166-23ac45744acd",
           isAvailable: true,
           isFeatured: true,
           sortOrder: 2,
@@ -370,8 +443,7 @@ async function main() {
           name: "Fried Spring Rolls",
           description: "Crispy spring rolls filled with vegetables and spices",
           price: 25000,
-          photoUrl:
-            "https://images.unsplash.com/photo-1558030006-450675393462",
+          photoUrl: "https://images.unsplash.com/photo-1558030006-450675393462",
           isAvailable: true,
           isFeatured: false,
           sortOrder: 3,
@@ -394,8 +466,7 @@ async function main() {
           name: "Iced Tea",
           description: "Refreshing homemade iced tea",
           price: 12000,
-          photoUrl:
-            "https://images.unsplash.com/photo-1556679343-c7306c1976bc",
+          photoUrl: "https://images.unsplash.com/photo-1556679343-c7306c1976bc",
           isAvailable: true,
           isFeatured: false,
           sortOrder: 5,
@@ -403,6 +474,794 @@ async function main() {
       ],
     });
     console.log("✅ Menu items created");
+  }
+
+  // ============================================================================
+  // 8. Seed RBAC System (Roles, Permissions, Business Type Templates)
+  // ============================================================================
+  console.log("🔐 Seeding RBAC system...");
+
+  // Define all permissions
+  const permissions = [
+    // User Management
+    {
+      code: "MANAGE_USERS",
+      name: "Manage Users",
+      description: "Create, update, delete users",
+      category: "User Management",
+    },
+    {
+      code: "VIEW_USERS",
+      name: "View Users",
+      description: "View user list and details",
+      category: "User Management",
+    },
+
+    // Menu Management
+    {
+      code: "MANAGE_MENU",
+      name: "Manage Menu",
+      description: "Create, update, delete menu items",
+      category: "Menu Management",
+    },
+    {
+      code: "VIEW_MENU",
+      name: "View Menu",
+      description: "View menu items",
+      category: "Menu Management",
+    },
+    {
+      code: "MANAGE_CATEGORIES",
+      name: "Manage Categories",
+      description: "Manage menu categories",
+      category: "Menu Management",
+    },
+
+    // Orders
+    {
+      code: "CREATE_ORDER",
+      name: "Create Order",
+      description: "Create new orders",
+      category: "Orders",
+    },
+    {
+      code: "VIEW_ALL_ORDERS",
+      name: "View All Orders",
+      description: "View all orders in the system",
+      category: "Orders",
+    },
+    {
+      code: "VIEW_OWN_ORDERS",
+      name: "View Own Orders",
+      description: "View own orders only",
+      category: "Orders",
+    },
+    {
+      code: "UPDATE_ORDER_STATUS",
+      name: "Update Order Status",
+      description: "Update order status",
+      category: "Orders",
+    },
+    {
+      code: "CANCEL_ORDER",
+      name: "Cancel Order",
+      description: "Cancel orders",
+      category: "Orders",
+    },
+
+    // Tables
+    {
+      code: "MANAGE_TABLES",
+      name: "Manage Tables",
+      description: "Create, update, delete tables",
+      category: "Tables",
+    },
+    {
+      code: "VIEW_TABLES",
+      name: "View Tables",
+      description: "View table list and status",
+      category: "Tables",
+    },
+
+    // Reservations
+    {
+      code: "MANAGE_RESERVATIONS",
+      name: "Manage Reservations",
+      description: "Approve, reject, manage reservations",
+      category: "Reservations",
+    },
+    {
+      code: "VIEW_RESERVATIONS",
+      name: "View Reservations",
+      description: "View reservation list",
+      category: "Reservations",
+    },
+    {
+      code: "CREATE_RESERVATION",
+      name: "Create Reservation",
+      description: "Create new reservation",
+      category: "Reservations",
+    },
+
+    // Payments
+    {
+      code: "PROCESS_PAYMENT",
+      name: "Process Payment",
+      description: "Process and confirm payments",
+      category: "Payments",
+    },
+    {
+      code: "VIEW_PAYMENTS",
+      name: "View Payments",
+      description: "View payment history",
+      category: "Payments",
+    },
+
+    // Reviews
+    {
+      code: "MODERATE_REVIEWS",
+      name: "Moderate Reviews",
+      description: "Approve, reject, manage reviews",
+      category: "Reviews",
+    },
+    {
+      code: "WRITE_REVIEW",
+      name: "Write Review",
+      description: "Write customer reviews",
+      category: "Reviews",
+    },
+
+    // Site Settings
+    {
+      code: "MANAGE_SETTINGS",
+      name: "Manage Settings",
+      description: "Manage site settings",
+      category: "Site Settings",
+    },
+    {
+      code: "MANAGE_THEME",
+      name: "Manage Theme",
+      description: "Customize site theme",
+      category: "Site Settings",
+    },
+    {
+      code: "MANAGE_LANDING",
+      name: "Manage Landing Page",
+      description: "Edit landing page content",
+      category: "Site Settings",
+    },
+
+    // Dashboard
+    {
+      code: "VIEW_DASHBOARD",
+      name: "View Dashboard",
+      description: "Access admin dashboard",
+      category: "Dashboard",
+    },
+    {
+      code: "VIEW_ANALYTICS",
+      name: "View Analytics",
+      description: "View analytics and reports",
+      category: "Dashboard",
+    },
+
+    // Kitchen Display
+    {
+      code: "VIEW_KITCHEN_DISPLAY",
+      name: "View Kitchen Display",
+      description: "View kitchen display system",
+      category: "Kitchen",
+    },
+  ];
+
+  for (const perm of permissions) {
+    await prisma.permission.upsert({
+      where: { code: perm.code },
+      update: {},
+      create: perm,
+    });
+  }
+  console.log(`✅ Created ${permissions.length} permissions`);
+
+  // Define all roles
+  const roles = [
+    {
+      code: "OWNER",
+      name: "Owner",
+      description: "Full access to all features",
+      hierarchy: 5,
+    },
+    {
+      code: "MANAGER",
+      name: "Manager",
+      description: "Manage operations and staff",
+      hierarchy: 4,
+    },
+    {
+      code: "CASHIER",
+      name: "Cashier",
+      description: "Handle payments and POS",
+      hierarchy: 3,
+    },
+    {
+      code: "WAITER",
+      name: "Waiter",
+      description: "Create and manage orders",
+      hierarchy: 3,
+    },
+    {
+      code: "KITCHEN",
+      name: "Kitchen Staff",
+      description: "Kitchen display and order status",
+      hierarchy: 3,
+    },
+    {
+      code: "CUSTOMER",
+      name: "Customer",
+      description: "Place orders and reviews",
+      hierarchy: 1,
+    },
+  ];
+
+  for (const role of roles) {
+    await prisma.role.upsert({
+      where: { code: role.code },
+      update: {},
+      create: role,
+    });
+  }
+  console.log(`✅ Created ${roles.length} roles`);
+
+  // Define role-permission matrix (same as current rbac.ts)
+  const rolePermissions: Record<string, string[]> = {
+    OWNER: [
+      "MANAGE_USERS",
+      "VIEW_USERS",
+      "MANAGE_MENU",
+      "VIEW_MENU",
+      "MANAGE_CATEGORIES",
+      "CREATE_ORDER",
+      "VIEW_ALL_ORDERS",
+      "UPDATE_ORDER_STATUS",
+      "CANCEL_ORDER",
+      "MANAGE_TABLES",
+      "VIEW_TABLES",
+      "MANAGE_RESERVATIONS",
+      "VIEW_RESERVATIONS",
+      "PROCESS_PAYMENT",
+      "VIEW_PAYMENTS",
+      "MODERATE_REVIEWS",
+      "MANAGE_SETTINGS",
+      "MANAGE_THEME",
+      "MANAGE_LANDING",
+      "VIEW_DASHBOARD",
+      "VIEW_ANALYTICS",
+    ],
+    MANAGER: [
+      "MANAGE_USERS",
+      "VIEW_USERS",
+      "MANAGE_MENU",
+      "VIEW_MENU",
+      "MANAGE_CATEGORIES",
+      "CREATE_ORDER",
+      "VIEW_ALL_ORDERS",
+      "UPDATE_ORDER_STATUS",
+      "CANCEL_ORDER",
+      "MANAGE_TABLES",
+      "VIEW_TABLES",
+      "MANAGE_RESERVATIONS",
+      "VIEW_RESERVATIONS",
+      "PROCESS_PAYMENT",
+      "VIEW_PAYMENTS",
+      "MODERATE_REVIEWS",
+      "MANAGE_LANDING",
+      "VIEW_DASHBOARD",
+      "VIEW_ANALYTICS",
+    ],
+    CASHIER: [
+      "VIEW_MENU",
+      "CREATE_ORDER",
+      "UPDATE_ORDER_STATUS",
+      "CANCEL_ORDER",
+      "PROCESS_PAYMENT",
+      "VIEW_PAYMENTS",
+    ],
+    WAITER: [
+      "VIEW_MENU",
+      "CREATE_ORDER",
+      "VIEW_TABLES",
+      "MANAGE_RESERVATIONS",
+      "VIEW_RESERVATIONS",
+    ],
+    KITCHEN: [
+      "VIEW_MENU",
+      "VIEW_ALL_ORDERS",
+      "UPDATE_ORDER_STATUS",
+      "VIEW_KITCHEN_DISPLAY",
+    ],
+    CUSTOMER: [
+      "VIEW_MENU",
+      "CREATE_ORDER",
+      "VIEW_OWN_ORDERS",
+      "CREATE_RESERVATION",
+      "WRITE_REVIEW",
+    ],
+  };
+
+  for (const [roleCode, permCodes] of Object.entries(rolePermissions)) {
+    const role = await prisma.role.findUnique({ where: { code: roleCode } });
+    if (!role) continue;
+
+    for (const permCode of permCodes) {
+      const permission = await prisma.permission.findUnique({
+        where: { code: permCode },
+      });
+      if (!permission) continue;
+
+      await prisma.rolePermission.upsert({
+        where: {
+          roleId_permissionId: {
+            roleId: role.id,
+            permissionId: permission.id,
+          },
+        },
+        update: {},
+        create: {
+          roleId: role.id,
+          permissionId: permission.id,
+        },
+      });
+    }
+  }
+  console.log("✅ Assigned permissions to roles");
+
+  // Define business type templates (lowercase to match tenant data)
+  const businessTypes = ["restaurant", "cafe", "bakery"];
+
+  // Restaurant: All roles enabled
+  const restaurantRoles = [
+    "OWNER",
+    "MANAGER",
+    "CASHIER",
+    "WAITER",
+    "KITCHEN",
+    "CUSTOMER",
+  ];
+  for (const roleCode of restaurantRoles) {
+    const role = await prisma.role.findUnique({ where: { code: roleCode } });
+    if (!role) continue;
+
+    await prisma.businessTypeRole.upsert({
+      where: {
+        businessType_roleId: {
+          businessType: "restaurant",
+          roleId: role.id,
+        },
+      },
+      update: {},
+      create: {
+        businessType: "restaurant",
+        roleId: role.id,
+        isEnabled: true,
+      },
+    });
+  }
+
+  // Restaurant: All permissions enabled
+  const allPermissions = await prisma.permission.findMany();
+  for (const permission of allPermissions) {
+    await prisma.businessTypePermission.upsert({
+      where: {
+        businessType_permissionId: {
+          businessType: "restaurant",
+          permissionId: permission.id,
+        },
+      },
+      update: {},
+      create: {
+        businessType: "restaurant",
+        permissionId: permission.id,
+        isEnabled: true,
+      },
+    });
+  }
+
+  // Cafe: Limited features (no reservations, no kitchen display)
+  const cafeRoles = ["OWNER", "MANAGER", "CASHIER", "WAITER", "CUSTOMER"];
+  for (const roleCode of cafeRoles) {
+    const role = await prisma.role.findUnique({ where: { code: roleCode } });
+    if (!role) continue;
+
+    await prisma.businessTypeRole.upsert({
+      where: {
+        businessType_roleId: {
+          businessType: "cafe",
+          roleId: role.id,
+        },
+      },
+      update: {},
+      create: {
+        businessType: "cafe",
+        roleId: role.id,
+        isEnabled: true,
+      },
+    });
+  }
+
+  // Cafe: Exclude reservation & kitchen permissions
+  const cafeExcludedPerms = [
+    "MANAGE_RESERVATIONS",
+    "VIEW_RESERVATIONS",
+    "CREATE_RESERVATION",
+    "VIEW_KITCHEN_DISPLAY",
+  ];
+  for (const permission of allPermissions) {
+    if (cafeExcludedPerms.includes(permission.code)) continue;
+
+    await prisma.businessTypePermission.upsert({
+      where: {
+        businessType_permissionId: {
+          businessType: "cafe",
+          permissionId: permission.id,
+        },
+      },
+      update: {},
+      create: {
+        businessType: "cafe",
+        permissionId: permission.id,
+        isEnabled: true,
+      },
+    });
+  }
+
+  // Bakery: Takeaway only (no tables, no reservations, no kitchen)
+  const bakeryRoles = ["OWNER", "MANAGER", "CASHIER", "CUSTOMER"];
+  for (const roleCode of bakeryRoles) {
+    const role = await prisma.role.findUnique({ where: { code: roleCode } });
+    if (!role) continue;
+
+    await prisma.businessTypeRole.upsert({
+      where: {
+        businessType_roleId: {
+          businessType: "bakery",
+          roleId: role.id,
+        },
+      },
+      update: {},
+      create: {
+        businessType: "bakery",
+        roleId: role.id,
+        isEnabled: true,
+      },
+    });
+  }
+
+  // Bakery: Exclude tables, reservations, kitchen
+  const bakeryExcludedPerms = [
+    "MANAGE_TABLES",
+    "VIEW_TABLES",
+    "MANAGE_RESERVATIONS",
+    "VIEW_RESERVATIONS",
+    "CREATE_RESERVATION",
+    "VIEW_KITCHEN_DISPLAY",
+  ];
+  for (const permission of allPermissions) {
+    if (bakeryExcludedPerms.includes(permission.code)) continue;
+
+    await prisma.businessTypePermission.upsert({
+      where: {
+        businessType_permissionId: {
+          businessType: "bakery",
+          permissionId: permission.id,
+        },
+      },
+      update: {},
+      create: {
+        businessType: "bakery",
+        permissionId: permission.id,
+        isEnabled: true,
+      },
+    });
+  }
+
+  // Retail: POS-focused (OWNER, MANAGER, CASHIER, CUSTOMER only)
+  const retailRoles = ["OWNER", "MANAGER", "CASHIER", "CUSTOMER"];
+  for (const roleCode of retailRoles) {
+    const role = await prisma.role.findUnique({ where: { code: roleCode } });
+    if (!role) continue;
+
+    await prisma.businessTypeRole.upsert({
+      where: {
+        businessType_roleId: {
+          businessType: "retail",
+          roleId: role.id,
+        },
+      },
+      update: {},
+      create: {
+        businessType: "retail",
+        roleId: role.id,
+        isEnabled: true,
+      },
+    });
+  }
+
+  // Retail: Core permissions only (no kitchen, tables, reservations)
+  const retailIncludedPerms = [
+    "MANAGE_CATEGORIES",
+    "VIEW_CATEGORIES",
+    "MANAGE_MENU", // Will be used for products
+    "VIEW_MENU",
+    "VIEW_ALL_ORDERS",
+    "MANAGE_ORDERS",
+    "CREATE_ORDER",
+    "UPDATE_ORDER_STATUS",
+    "PROCESS_PAYMENTS",
+    "VIEW_PAYMENTS",
+    "MANAGE_SETTINGS",
+    "VIEW_SETTINGS",
+    "VIEW_ANALYTICS",
+    "VIEW_REPORTS",
+    "EXPORT_DATA",
+    "VIEW_USERS",
+    "MANAGE_USERS",
+  ];
+  for (const permission of allPermissions) {
+    if (!retailIncludedPerms.includes(permission.code)) continue;
+
+    await prisma.businessTypePermission.upsert({
+      where: {
+        businessType_permissionId: {
+          businessType: "retail",
+          permissionId: permission.id,
+        },
+      },
+      update: {},
+      create: {
+        businessType: "retail",
+        permissionId: permission.id,
+        isEnabled: true,
+      },
+    });
+  }
+
+  console.log(
+    "✅ Business type templates configured (restaurant, cafe, bakery, retail)",
+  );
+
+  // ============================================================================
+  // 10. Create Retail Demo Tenant
+  // ============================================================================
+  let retailTenant = await prisma.tenant.findUnique({
+    where: { slug: "demo-retail" },
+  });
+
+  if (!retailTenant) {
+    retailTenant = await prisma.tenant.create({
+      data: {
+        slug: "demo-retail",
+        name: "Toko Sejahtera - Demo Retail",
+        businessType: "retail",
+        ownerEmail: "owner@tokosejahtera.com",
+        ownerName: "Toko Owner",
+        plan: "pro",
+        isActive: true,
+      },
+    });
+    console.log("✅ Retail tenant created:", retailTenant.slug);
+
+    // Create subscription for retail tenant
+    const retailTrialEndsAt = new Date();
+    retailTrialEndsAt.setDate(retailTrialEndsAt.getDate() + 30);
+
+    await prisma.subscription.create({
+      data: {
+        tenantId: retailTenant.id,
+        plan: "pro",
+        status: "TRIAL",
+        trialEndsAt: retailTrialEndsAt,
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: retailTrialEndsAt,
+      },
+    });
+    console.log("✅ Subscription created for retail tenant");
+
+    // Create admin user for retail
+    const retailAdminPasswordHash = await hashPassword("admin123");
+    await prisma.adminUser.create({
+      data: {
+        tenantId: retailTenant.id,
+        email: "admin@tokosejahtera.com",
+        passwordHash: retailAdminPasswordHash,
+        name: "Store Admin",
+        role: "OWNER",
+        isActive: true,
+      },
+    });
+    console.log("✅ Retail admin user created");
+
+    // Create sample retail users
+    const retailUsers = [
+      {
+        email: "owner@tokosejahtera.com",
+        name: "Store Owner",
+        role: "OWNER" as const,
+        password: "owner123",
+        phoneNumber: "+62 821 1111 1111",
+      },
+      {
+        email: "manager@tokosejahtera.com",
+        name: "Store Manager",
+        role: "MANAGER" as const,
+        password: "manager123",
+        phoneNumber: "+62 821 2222 2222",
+      },
+      {
+        email: "cashier@tokosejahtera.com",
+        name: "Cashier",
+        role: "CASHIER" as const,
+        password: "cashier123",
+        phoneNumber: "+62 821 3333 3333",
+      },
+      {
+        email: "customer@tokosejahtera.com",
+        name: "Loyal Customer",
+        role: "CUSTOMER" as const,
+        password: "customer123",
+        phoneNumber: "+62 821 9999 9999",
+      },
+    ];
+
+    for (const userData of retailUsers) {
+      const retailPasswordHash = await hashPassword(userData.password);
+      await prisma.user.create({
+        data: {
+          tenantId: retailTenant.id,
+          email: userData.email,
+          passwordHash: retailPasswordHash,
+          name: userData.name,
+          role: userData.role,
+          phoneNumber: userData.phoneNumber,
+          isActive: true,
+        },
+      });
+      console.log(
+        `✅ Retail user created: ${userData.email} (${userData.role})`,
+      );
+    }
+
+    // Create business info for retail
+    await prisma.businessInfo.create({
+      data: {
+        tenantId: retailTenant.id,
+        name: "Toko Sejahtera",
+        description:
+          "Toko retail modern dengan berbagai produk kebutuhan sehari-hari berkualitas.",
+        address: "Jl. Merdeka Raya No. 123\nSurabaya, Jawa Timur 60111",
+        phoneNumber: "+62 821 9876 5432",
+        email: "info@tokosejahtera.com",
+        mapsUrl: "https://maps.google.com/",
+        metadata: {
+          openingHours: "Senin - Sabtu: 08:00 - 21:00\nMinggu: 09:00 - 18:00",
+        },
+      },
+    });
+    console.log("✅ Retail business info created");
+
+    // Create theme config for retail
+    await prisma.themeConfig.create({
+      data: {
+        tenantId: retailTenant.id,
+        primaryColor: "#2563eb", // blue-600
+        secondaryColor: "#7c3aed", // purple-600
+        fontFamily: "Inter",
+        layoutVariant: "default",
+      },
+    });
+    console.log("✅ Retail theme config created");
+
+    // Create sample product categories
+    const retailCategories = [
+      {
+        name: "Makanan & Minuman",
+        slug: "makanan-minuman",
+      },
+      {
+        name: "Kebutuhan Rumah Tangga",
+        slug: "rumah-tangga",
+      },
+      {
+        name: "Kesehatan & Kecantikan",
+        slug: "kesehatan-kecantikan",
+      },
+      {
+        name: "Elektronik",
+        slug: "elektronik",
+      },
+    ];
+
+    const createdRetailCategories = [];
+    for (const cat of retailCategories) {
+      const category = await prisma.category.create({
+        data: {
+          tenantId: retailTenant.id,
+          name: cat.name,
+          slug: cat.slug,
+          isActive: true,
+          sortOrder: 0,
+        },
+      });
+      createdRetailCategories.push(category);
+    }
+    console.log("✅ Retail categories created");
+
+    // Create sample products (using MenuItem model)
+    const retailProducts = [
+      {
+        categoryId: createdRetailCategories[0].id, // Makanan & Minuman
+        name: "Indomie Goreng",
+        slug: "indomie-goreng",
+        description: "Mi instan goreng rasa original",
+        price: 3500,
+        photoUrl:
+          "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=400",
+      },
+      {
+        categoryId: createdRetailCategories[0].id,
+        name: "Aqua 600ml",
+        slug: "aqua-600ml",
+        description: "Air mineral kemasan 600ml",
+        price: 4000,
+        photoUrl:
+          "https://images.unsplash.com/photo-1523362628745-0c100150b504?w=400",
+      },
+      {
+        categoryId: createdRetailCategories[1].id, // Rumah Tangga
+        name: "Sabun Cuci Piring",
+        slug: "sabun-cuci-piring",
+        description: "Sabun cuci piring formula anti bakteri",
+        price: 12000,
+        photoUrl:
+          "https://images.unsplash.com/photo-1563241527-3004b7be0ffd?w=400",
+      },
+      {
+        categoryId: createdRetailCategories[2].id, // Kesehatan
+        name: "Masker Kesehatan",
+        slug: "masker-kesehatan",
+        description: "Masker 3 ply isi 10 pcs",
+        price: 15000,
+        photoUrl:
+          "https://images.unsplash.com/photo-1584370830116-95c1095d7b1a?w=400",
+      },
+      {
+        categoryId: createdRetailCategories[3].id, // Elektronik
+        name: "Kabel USB Type-C",
+        slug: "kabel-usb-type-c",
+        description: "Kabel charger USB Type-C 1 meter",
+        price: 25000,
+        photoUrl:
+          "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=400",
+      },
+    ];
+
+    for (const product of retailProducts) {
+      await prisma.menuItem.create({
+        data: {
+          tenantId: retailTenant.id,
+          categoryId: product.categoryId,
+          name: product.name,
+          slug: product.slug,
+          description: product.description,
+          price: product.price,
+          photoUrl: product.photoUrl,
+          isAvailable: true,
+          isFeatured: false,
+        },
+      });
+    }
+    console.log("✅ Retail products created");
+  } else {
+    console.log("ℹ️  Retail tenant already exists:", retailTenant.slug);
   }
 
   console.log("✨ Seeding complete!");

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const { confirm } = useConfirmDialog();
+
 definePageMeta({
   layout: "admin",
   middleware: ["admin-auth"],
@@ -87,7 +89,13 @@ const toggleHeroActive = async (hero: Hero) => {
 };
 
 const deleteHero = async (id: string) => {
-  if (!confirm("Are you sure you want to delete this hero?")) return;
+  const confirmed = await confirm({
+    title: "Delete Hero",
+    message: "Are you sure you want to delete this hero?",
+    confirmText: "Delete",
+    confirmColor: "error",
+  });
+  if (!confirmed) return;
 
   try {
     await $fetch(`/api/admin/landing/hero/${id}`, {
@@ -145,7 +153,7 @@ const deleteHero = async (id: string) => {
               :src="hero.imageUrl"
               :alt="hero.title"
               class="w-full h-full object-cover"
-            >
+            />
             <div v-else class="w-full h-full flex items-center justify-center">
               <UIcon
                 name="i-heroicons-photo"

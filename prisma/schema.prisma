@@ -72,6 +72,8 @@ model Tenant {
   // Relations
   subscription  Subscription?
   adminUsers    AdminUser[]
+  users         User[]
+  auditLogs     AuditLog[]
   siteSettings  SiteSettings[]
   landingHeroes LandingHero[]
   reviews       Review[]
@@ -85,6 +87,9 @@ model Tenant {
   reservations Reservation[]
   orders       Order[]
   payments     Payment[]
+
+  // RBAC relations
+  tenantPermissionOverrides TenantPermissionOverride[]
 
   @@index([ownerEmail])
   @@map("tenant")
@@ -131,6 +136,7 @@ model AdminUser {
   email        String
   passwordHash String
   name         String
+  role         String   @default("OWNER") // OWNER, MANAGER, CASHIER, WAITER, KITCHEN
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -177,8 +183,77 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum UserRole {
+  OWNER       // Full access to tenant
+  MANAGER     // Manage operations (orders, menu, staff)
+  CASHIER     // POS and payment operations
+  WAITER      // Create and manage orders
+  KITCHEN     // Kitchen display and order status
+  CUSTOMER    // Public user (place orders, reviews, reservations)
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  APPROVE
+  REJECT
+  CANCEL
+}
+
+model AuditLog {
+  id          String      @id @default(cuid())
+  tenantId    String      // Which tenant this belongs to
+  userId      String?     // Who performed the action (null for system actions)
+  action      AuditAction // What action was performed
+  entity      String      // What entity was affected (Order, Menu, User, etc)
+  entityId    String?     // ID of the affected entity
+  oldData     Json?       // Previous state (for UPDATE/DELETE)
+  newData     Json?       // New state (for CREATE/UPDATE)
+  metadata    Json?       // Additional context (IP, user agent, etc)
+  createdAt   DateTime    @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([entity])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_log")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  tenantId     String?   // null for platform-level customers (cross-tenant)
+  email        String
+  passwordHash String?   // null for guest orders
+  name         String
+  phoneNumber  String?
+  role         UserRole  @default(CUSTOMER)
+  isActive     Boolean   @default(true)
+  metadata     Json?     // Role-specific settings, preferences
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  tenant       Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders       Order[]       @relation("OrderCreatedBy")
+  reservations Reservation[] @relation("ReservationCreatedBy")
+  reviews      Review[]      @relation("ReviewAuthor")
+  auditLogs    AuditLog[]
+
+  @@unique([tenantId, email])
+  @@index([email])
+  @@index([tenantId])
+  @@index([role])
+  @@map("user")
+}
+
 // ============================================================================
-// RESTAURANT MODULE (resto_* tables)
+// BUSINESS MODULE (generic tables for all business types)
 // ============================================================================
 
 model Category {
@@ -196,7 +271,7 @@ model Category {
 
   @@unique([tenantId, slug])
   @@index([tenantId])
-  @@map("resto_category")
+  @@map("category")
 }
 
 model MenuItem {
@@ -220,7 +295,7 @@ model MenuItem {
   @@index([tenantId])
   @@index([categoryId])
   @@index([isFeatured])
-  @@map("resto_menu_item")
+  @@map("item")
 }
 
 model Table {
@@ -239,13 +314,14 @@ model Table {
 
   @@unique([tenantId, tableCode])
   @@index([tenantId])
-  @@map("resto_table")
+  @@map("resource_table")
 }
 
 model Reservation {
   id            String            @id @default(cuid())
   tenantId      String
   tableId       String?
+  userId        String?   // Customer who made the reservation (optional for guest)
   customerName  String
   customerPhone String
   partySize     Int
@@ -257,13 +333,15 @@ model Reservation {
 
   tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   table  Table?  @relation(fields: [tableId], references: [id])
+  user   User?   @relation("ReservationCreatedBy", fields: [userId], references: [id])
   orders Order[]
 
   @@index([tenantId])
   @@index([tableId])
+  @@index([userId])
   @@index([status])
   @@index([startAt])
-  @@map("resto_reservation")
+  @@map("reservation")
 }
 
 model Order {
@@ -275,6 +353,8 @@ model Order {
 
   tableId       String?
   reservationId String?
+  userId        String?   // Customer who placed the order (optional for guest)
+  createdById   String?   // Staff who created/input the order (for staff-assisted orders)
 
   customerName  String?
   customerPhone String?
@@ -289,6 +369,7 @@ model Order {
   tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   table       Table?       @relation(fields: [tableId], references: [id])
   reservation Reservation? @relation(fields: [reservationId], references: [id])
+  user        User?        @relation("OrderCreatedBy", fields: [userId], references: [id])
   items       OrderItem[]
   payments    Payment[]
 
@@ -296,9 +377,10 @@ model Order {
   @@index([tenantId])
   @@index([tableId])
   @@index([reservationId])
+  @@index([userId])
   @@index([status])
   @@index([type])
-  @@map("resto_order")
+  @@map("order")
 }
 
 model OrderItem {
@@ -320,7 +402,7 @@ model OrderItem {
 
   @@index([orderId])
   @@index([menuItemId])
-  @@map("resto_order_item")
+  @@map("order_item")
 }
 
 model Payment {
@@ -345,7 +427,7 @@ model Payment {
   @@index([tenantId])
   @@index([orderId])
   @@index([status])
-  @@map("resto_payment")
+  @@map("payment")
 }
 
 // ============================================================================
@@ -355,6 +437,7 @@ model Payment {
 model Review {
   id          String   @id @default(cuid())
   tenantId    String
+  userId      String?  // User who wrote the review (null for anonymous)
   authorName  String
   rating      Int
   comment     String?
@@ -364,8 +447,10 @@ model Review {
   updatedAt   DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User?  @relation("ReviewAuthor", fields: [userId], references: [id])
 
   @@index([tenantId])
+  @@index([userId])
   @@index([isPublished])
   @@index([isFeatured])
   @@index([rating])
@@ -417,4 +502,110 @@ model SiteSettings {
   @@unique([tenantId, key])
   @@index([tenantId])
   @@map("site_settings")
+}
+
+// ============================================================================
+// RBAC MODELS (Platform-managed Role-Based Access Control)
+// ============================================================================
+
+model Permission {
+  id          String   @id @default(cuid())
+  code        String   @unique // "MANAGE_MENU", "VIEW_ORDERS"
+  name        String // "Manage Menu Items"
+  description String
+  category    String // "Menu", "Orders", "Settings", etc.
+  isSystem    Boolean  @default(true) // System permissions cannot be deleted
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rolePermissions               RolePermission[]
+  businessTypePermissions       BusinessTypePermission[]
+  tenantPermissionOverrides     TenantPermissionOverride[]
+
+  @@index([category])
+  @@index([isSystem])
+  @@map("permission")
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  code        String   @unique // "OWNER", "MANAGER", "CASHIER"
+  name        String // "Owner", "Manager"
+  description String
+  hierarchy   Int // 5=OWNER, 4=MANAGER, 3=CASHIER/WAITER/KITCHEN, 1=CUSTOMER
+  isSystem    Boolean  @default(true) // System roles cannot be deleted
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rolePermissions       RolePermission[]
+  businessTypeRoles     BusinessTypeRole[]
+
+  @@index([hierarchy])
+  @@index([isSystem])
+  @@map("role")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  createdAt    DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("role_permission")
+}
+
+model BusinessTypeRole {
+  id           String   @id @default(cuid())
+  businessType String // "RESTAURANT", "CAFE", "BAKERY"
+  roleId       String
+  isEnabled    Boolean  @default(true) // This business type uses this role
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([businessType, roleId])
+  @@index([businessType])
+  @@index([roleId])
+  @@map("business_type_role")
+}
+
+model BusinessTypePermission {
+  id           String   @id @default(cuid())
+  businessType String // "RESTAURANT", "CAFE", "BAKERY"
+  permissionId String
+  isEnabled    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([businessType, permissionId])
+  @@index([businessType])
+  @@index([permissionId])
+  @@map("business_type_permission")
+}
+
+model TenantPermissionOverride {
+  id           String   @id @default(cuid())
+  tenantId     String
+  permissionId String
+  roleCode     String // Which role this override applies to
+  isGranted    Boolean // true = grant, false = revoke
+  note         String? // Why this override was made
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, permissionId, roleCode])
+  @@index([tenantId])
+  @@index([permissionId])
+  @@map("tenant_permission_override")
 }

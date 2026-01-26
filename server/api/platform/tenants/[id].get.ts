@@ -4,7 +4,7 @@ export default defineEventHandler(async (event) => {
   const session = await getUserSession(event);
 
   // Check if user is platform admin
-  if (!session.isPlatformAdmin) {
+  if (!session.user?.isPlatformAdmin) {
     throw createError({
       statusCode: 403,
       message: "Forbidden: Platform admin access required",

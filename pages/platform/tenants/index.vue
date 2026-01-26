@@ -6,23 +6,13 @@
         <p class="text-gray-600">Manage all tenant accounts</p>
       </div>
 
-      <!-- Create Tenant Modal with Trigger -->
-      <UModal v-model:open="isCreateModalOpen" title="Create New Tenant">
-        <UButton icon="i-heroicons-plus" size="lg"> Create Tenant </UButton>
-
-        <template #body>
-          <p class="text-gray-600">Coming soon...</p>
-        </template>
-
-        <template #footer="{ close }">
-          <UButton
-            label="Cancel"
-            color="neutral"
-            variant="outline"
-            @click="close"
-          />
-        </template>
-      </UModal>
+      <UButton
+        icon="i-heroicons-plus"
+        size="lg"
+        @click="isCreateModalOpen = true"
+      >
+        Create Tenant
+      </UButton>
     </div>
 
     <!-- Filters -->
@@ -95,7 +85,12 @@
           </template>
 
           <template #createdAt-cell="{ row }">
-            {{ formatDate(row.original.createdAt) }}
+            <ClientOnly>
+              {{ formatDate(row.original.createdAt) }}
+              <template #fallback>
+                <span class="text-gray-400">Loading...</span>
+              </template>
+            </ClientOnly>
           </template>
 
           <template #actions-cell="{ row }">
@@ -114,6 +109,28 @@
         </template>
       </ClientOnly>
     </UCard>
+
+    <!-- Create Tenant Modal -->
+    <UModal
+      v-model:open="isCreateModalOpen"
+      title="Create New Tenant"
+      description="Add a new tenant to the platform"
+    >
+      <template #body>
+        <p class="text-gray-600">Coming soon...</p>
+      </template>
+
+      <template #footer="{ close }">
+        <div class="flex justify-end gap-2">
+          <UButton
+            label="Cancel"
+            color="neutral"
+            variant="outline"
+            @click="close"
+          />
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>
 
@@ -231,17 +248,29 @@ const getSubscriptionColor = (status: string) => {
   }
 };
 
+const viewTenantDetails = (tenantId: string) => {
+  navigateTo(`/platform/tenants/${tenantId}`);
+};
+
+const editTenant = (tenantId: string) => {
+  console.log("Edit", tenantId);
+};
+
+const toggleTenantActive = (tenantId: string) => {
+  console.log("Toggle active", tenantId);
+};
+
 const getActions = (tenant: Tenant) => [
   [
     {
       label: "View Details",
       icon: "i-heroicons-eye",
-      click: () => navigateTo(`/platform/tenants/${tenant.id}`),
+      onSelect: () => viewTenantDetails(tenant.id),
     },
     {
       label: "Edit",
       icon: "i-heroicons-pencil",
-      click: () => console.log("Edit", tenant.id),
+      onSelect: () => editTenant(tenant.id),
     },
   ],
   [
@@ -250,7 +279,7 @@ const getActions = (tenant: Tenant) => [
       icon: tenant.isActive
         ? "i-heroicons-no-symbol"
         : "i-heroicons-check-circle",
-      click: () => console.log("Toggle active", tenant.id),
+      onSelect: () => toggleTenantActive(tenant.id),
     },
   ],
 ];

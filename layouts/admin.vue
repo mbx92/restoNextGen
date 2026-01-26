@@ -1,15 +1,32 @@
 <script setup lang="ts">
+import { PERMISSIONS } from "~/server/utils/rbac";
+
 const { data: session } = await useFetch("/api/admin/auth/session");
 const router = useRouter();
 const isOpen = ref(false);
 
-// Get business type from session
+// Get user role and business type from session
+const userRole = computed(() => session.value?.user?.role || null);
 const businessType = computed(
-  () => session.value?.user?.businessType || "restaurant",
+  () => session.value?.user?.businessType?.toLowerCase() || "restaurant",
 );
 
-// Dynamic navigation based on business type
-const getNavItems = (type: string) => {
+// Permission check function (client-side, using static matrix)
+const canAccess = (permission: string) => {
+  // If no permission required, always allow
+  if (!permission) return true;
+
+  // If no role yet (still loading), hide menu items with permissions
+  if (!userRole.value) return false;
+
+  const allowedRoles = PERMISSIONS[permission as keyof typeof PERMISSIONS];
+  return allowedRoles ? allowedRoles.includes(userRole.value) : true;
+};
+
+// Dynamic navigation based on business type AND permissions
+const navItems = computed(() => {
+  const type = businessType.value;
+
   const baseItems = [
     { label: "Dashboard", to: "/admin", icon: "i-heroicons-home" },
   ];
@@ -19,19 +36,32 @@ const getNavItems = (type: string) => {
       label: "Reservations",
       to: "/admin/reservations",
       icon: "i-heroicons-calendar",
+      permission: "MANAGE_RESERVATIONS",
     },
     {
       label: "Tables",
       to: "/admin/tables",
       icon: "i-heroicons-rectangle-group",
+      permission: "MANAGE_TABLES",
     },
     {
       label: "Categories",
       to: "/admin/categories",
       icon: "i-heroicons-folder",
+      permission: "MANAGE_CATEGORIES",
     },
-    { label: "Menu Items", to: "/admin/menu", icon: "i-heroicons-book-open" },
-    { label: "Orders", to: "/admin/orders", icon: "i-heroicons-shopping-cart" },
+    {
+      label: "Menu Items",
+      to: "/admin/menu",
+      icon: "i-heroicons-book-open",
+      permission: "MANAGE_MENU",
+    },
+    {
+      label: "Orders",
+      to: "/admin/orders",
+      icon: "i-heroicons-shopping-cart",
+      permission: "VIEW_ALL_ORDERS",
+    },
   ];
 
   const retailItems = [
@@ -55,43 +85,72 @@ const getNavItems = (type: string) => {
   ];
 
   const commonItems = [
-    { label: "Landing Page", to: "/admin/landing", icon: "i-heroicons-star" },
+    {
+      label: "Users",
+      to: "/admin/users",
+      icon: "i-heroicons-user-group",
+      permission: "VIEW_USERS",
+    },
+    {
+      label: "Landing Page",
+      to: "/admin/landing",
+      icon: "i-heroicons-star",
+      permission: "MANAGE_LANDING",
+    },
     {
       label: "Featured Menu",
       to: "/admin/featured-menu",
       icon: "i-heroicons-sparkles",
+      permission: "MANAGE_LANDING",
     },
     {
       label: "Reviews",
       to: "/admin/reviews",
       icon: "i-heroicons-chat-bubble-left-right",
+      permission: "MODERATE_REVIEWS",
     },
-    { label: "Location", to: "/admin/location", icon: "i-heroicons-map-pin" },
-    { label: "Theme", to: "/admin/theme", icon: "i-heroicons-paint-brush" },
+    {
+      label: "Location",
+      to: "/admin/location",
+      icon: "i-heroicons-map-pin",
+      permission: "MANAGE_SETTINGS",
+    },
+    {
+      label: "Theme",
+      to: "/admin/theme",
+      icon: "i-heroicons-paint-brush",
+      permission: "MANAGE_THEME",
+    },
     {
       label: "Site Settings",
       to: "/admin/settings",
       icon: "i-heroicons-cog-6-tooth",
+      permission: "MANAGE_SETTINGS",
     },
   ];
 
-  let moduleItems = [];
-  if (type === "restaurant") {
+  let moduleItems: any[] = [];
+  const normalizedType = type?.toLowerCase() || "restaurant";
+  if (normalizedType === "restaurant") {
     moduleItems = restaurantItems;
-  } else if (type === "retail") {
+  } else if (normalizedType === "retail") {
     moduleItems = retailItems;
-  } else if (type === "salon") {
+  } else if (normalizedType === "salon") {
     moduleItems = salonItems;
   }
 
-  return [...baseItems, ...moduleItems, ...commonItems];
-};
+  const allItems = [...baseItems, ...moduleItems, ...commonItems];
 
-const navItems = computed(() => getNavItems(businessType.value));
+  // Filter by permissions
+  return allItems.filter((item) => {
+    if (!item.permission) return true;
+    return canAccess(item.permission);
+  });
+});
 
 async function handleLogout() {
   await $fetch("/api/admin/auth/logout", { method: "POST" });
-  await router.push("/admin/login");
+  await router.push("/login");
 }
 </script>
 

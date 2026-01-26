@@ -11,7 +11,12 @@
       </template>
 
       <form class="space-y-4" @submit.prevent="handleLogin">
-        <UFormGroup label="Email" required>
+        <div>
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >
+            Email <span class="text-red-500">*</span>
+          </label>
           <UInput
             v-model="form.email"
             type="email"
@@ -20,9 +25,14 @@
             :disabled="isLoading"
             class="w-full mb-4"
           />
-        </UFormGroup>
+        </div>
 
-        <UFormGroup label="Password" required>
+        <div>
+          <label
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+          >
+            Password <span class="text-red-500">*</span>
+          </label>
           <UInput
             v-model="form.password"
             type="password"
@@ -31,7 +41,7 @@
             :disabled="isLoading"
             class="w-full mb-4"
           />
-        </UFormGroup>
+        </div>
 
         <UButton
           type="submit"
@@ -61,7 +71,7 @@
           <p class="text-sm text-gray-600">
             Tenant admin?
             <NuxtLink
-              to="/admin/login"
+              to="/login"
               class="text-primary-600 hover:text-primary-700"
             >
               Sign in here
