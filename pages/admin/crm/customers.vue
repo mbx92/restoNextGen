@@ -58,7 +58,7 @@ const filteredCustomers = computed(() => {
     (c) =>
       c.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       c.email?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      c.phone.includes(searchQuery.value)
+      c.phone.includes(searchQuery.value),
   );
 });
 
@@ -112,9 +112,7 @@ const columns = [
         <h1 class="text-3xl font-serif font-bold text-stone-900">Customers</h1>
         <p class="mt-2 text-stone-600">Manage your customer relationships</p>
       </div>
-      <UButton color="primary" icon="i-heroicons-plus">
-        Add Customer
-      </UButton>
+      <UButton color="primary" icon="i-heroicons-plus"> Add Customer </UButton>
     </div>
 
     <!-- Stats Cards -->

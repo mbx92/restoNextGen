@@ -289,7 +289,10 @@ const deleteHero = async (id: string) => {
     >
       <template #body>
         <div class="space-y-4">
-          <UFormField label="Campaign (Optional)" hint="Link this hero to an active campaign">
+          <UFormField
+            label="Campaign (Optional)"
+            hint="Link this hero to an active campaign"
+          >
             <USelectMenu
               v-model="heroForm.campaignId"
               :options="campaignOptions"

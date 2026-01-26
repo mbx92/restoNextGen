@@ -108,7 +108,7 @@ const formatDate = (dateString: string) => {
 };
 
 const getStatusColor = (
-  status: string
+  status: string,
 ): "neutral" | "primary" | "success" | "error" | "warning" => {
   const colors: Record<
     string,
@@ -184,9 +184,7 @@ const columns = [
     <div class="mb-8 flex items-center justify-between">
       <div>
         <h1 class="text-3xl font-serif font-bold text-stone-900">Campaigns</h1>
-        <p class="mt-2 text-stone-600">
-          Create and manage marketing campaigns
-        </p>
+        <p class="mt-2 text-stone-600">Create and manage marketing campaigns</p>
       </div>
       <UButton
         color="primary"
@@ -264,7 +262,9 @@ const columns = [
                 />
               </div>
               <div>
-                <p class="font-medium text-stone-900">{{ row.original.name }}</p>
+                <p class="font-medium text-stone-900">
+                  {{ row.original.name }}
+                </p>
                 <p class="text-xs text-stone-500">
                   {{ row.original.targetAudience }}
                 </p>
@@ -280,7 +280,10 @@ const columns = [
 
           <template #status-cell="{ row }">
             <UBadge :color="getStatusColor(row.original.status)">
-              {{ row.original.status.charAt(0).toUpperCase() + row.original.status.slice(1) }}
+              {{
+                row.original.status.charAt(0).toUpperCase() +
+                row.original.status.slice(1)
+              }}
             </UBadge>
           </template>
 
@@ -306,7 +309,12 @@ const columns = [
                 v-if="row.original.reach > 0"
                 class="text-xs text-stone-400"
               >
-                ({{ ((row.original.conversions / row.original.reach) * 100).toFixed(1) }}%)
+                ({{
+                  (
+                    (row.original.conversions / row.original.reach) *
+                    100
+                  ).toFixed(1)
+                }}%)
               </span>
             </div>
           </template>
@@ -382,13 +390,21 @@ const columns = [
                 <label class="block text-sm font-medium text-stone-700 mb-1">
                   Start Date
                 </label>
-                <UInput v-model="campaignForm.startDate" type="date" class="w-full" />
+                <UInput
+                  v-model="campaignForm.startDate"
+                  type="date"
+                  class="w-full"
+                />
               </div>
               <div>
                 <label class="block text-sm font-medium text-stone-700 mb-1">
                   End Date
                 </label>
-                <UInput v-model="campaignForm.endDate" type="date" class="w-full" />
+                <UInput
+                  v-model="campaignForm.endDate"
+                  type="date"
+                  class="w-full"
+                />
               </div>
             </div>
 

@@ -101,7 +101,7 @@ const filteredMembers = computed(() => {
   return members.value.filter(
     (m) =>
       m.customerName.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      m.phone.includes(searchQuery.value)
+      m.phone.includes(searchQuery.value),
   );
 });
 
@@ -110,7 +110,7 @@ const stats = computed(() => ({
   totalPointsIssued: members.value.reduce((sum, m) => sum + m.totalEarned, 0),
   totalPointsRedeemed: members.value.reduce(
     (sum, m) => sum + m.totalRedeemed,
-    0
+    0,
   ),
 }));
 
