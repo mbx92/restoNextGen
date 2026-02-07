@@ -1,450 +1,579 @@
 <template>
-  <div v-if="pending" class="flex items-center justify-center h-64">
-    <USkeleton class="w-full h-64" />
-  </div>
-
-  <div v-else-if="tenant">
-    <!-- Header -->
-    <div class="mb-6">
-      <div class="flex items-center gap-2 mb-2">
-        <UButton
-          icon="i-heroicons-arrow-left"
-          variant="ghost"
-          color="neutral"
-          to="/platform/tenants"
-        />
-        <h1 class="text-2xl font-bold text-gray-900">{{ tenant.name }}</h1>
-        <UBadge :color="tenant.isActive ? 'success' : 'error'" variant="subtle">
-          {{ tenant.isActive ? "Active" : "Inactive" }}
-        </UBadge>
-      </div>
-      <p class="text-gray-600 ml-10">Tenant Details & Management</p>
+  <div>
+    <div v-if="pending" class="flex items-center justify-center h-64">
+      <USkeleton class="w-full h-64" />
     </div>
 
-    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      <!-- Main Info -->
-      <div class="lg:col-span-2 space-y-6">
-        <!-- Tenant Info Card -->
-        <UCard>
-          <template #header>
-            <h3 class="text-lg font-semibold">Tenant Information</h3>
-          </template>
-
-          <div class="space-y-4">
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="text-sm text-gray-600">Slug</label>
-                <p class="font-medium">{{ tenant.slug }}</p>
-              </div>
-              <div>
-                <label class="text-sm text-gray-600">Business Type</label>
-                <p class="font-medium capitalize">{{ tenant.businessType }}</p>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="text-sm text-gray-600">Owner Name</label>
-                <p class="font-medium">{{ tenant.ownerName || "-" }}</p>
-              </div>
-              <div>
-                <label class="text-sm text-gray-600">Owner Email</label>
-                <p class="font-medium">{{ tenant.ownerEmail || "-" }}</p>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="text-sm text-gray-600">Created At</label>
-                <ClientOnly>
-                  <p class="font-medium">{{ formatDate(tenant.createdAt) }}</p>
-                  <template #fallback>
-                    <p class="font-medium text-gray-400">Loading...</p>
-                  </template>
-                </ClientOnly>
-              </div>
-              <div>
-                <label class="text-sm text-gray-600">Plan</label>
-                <p class="font-medium capitalize">{{ tenant.plan }}</p>
-              </div>
-            </div>
-          </div>
-        </UCard>
-
-        <!-- Admin Users -->
-        <UCard>
-          <template #header>
-            <div class="flex justify-between items-center">
-              <h3 class="text-lg font-semibold">Admin Users</h3>
-              <UButton
-                icon="i-heroicons-plus"
-                label="Add Admin"
-                size="sm"
-                @click="showAddUserModal = true"
-              />
-            </div>
-          </template>
-
-          <ClientOnly>
-            <UTable :data="tenant.adminUsers" :columns="userColumns">
-              <template #email-cell="{ row }">
-                <div>
-                  <p class="font-medium text-gray-900">
-                    {{ row.original.email }}
-                  </p>
-                  <p class="text-sm text-gray-500">
-                    {{ row.original.name || "No name" }}
-                  </p>
-                </div>
-              </template>
-
-              <template #role-cell="{ row }">
-                <UBadge color="primary" variant="subtle">
-                  {{ row.original.role || "ADMIN" }}
-                </UBadge>
-              </template>
-
-              <template #actions-cell="{ row }">
-                <UButton
-                  icon="i-heroicons-trash"
-                  variant="ghost"
-                  color="error"
-                  size="sm"
-                  @click="deleteUser(row.original.id)"
-                />
-              </template>
-            </UTable>
-            <template #fallback>
-              <div class="p-4 text-center text-gray-500">Loading...</div>
-            </template>
-          </ClientOnly>
-        </UCard>
+    <div v-else-if="tenant">
+      <!-- Header -->
+      <div class="mb-6">
+        <div class="flex items-center gap-2 mb-2">
+          <UButton
+            icon="i-heroicons-arrow-left"
+            variant="ghost"
+            color="neutral"
+            to="/platform/tenants"
+          />
+          <h1 class="text-2xl font-bold text-gray-900">{{ tenant.name }}</h1>
+          <UBadge
+            :color="tenant.isActive ? 'success' : 'error'"
+            variant="subtle"
+          >
+            {{ tenant.isActive ? "Active" : "Inactive" }}
+          </UBadge>
+        </div>
+        <p class="text-gray-600 ml-10">Tenant Details & Management</p>
       </div>
 
-      <!-- Sidebar -->
-      <div class="space-y-6">
-        <!-- Subscription Card -->
-        <UCard v-if="tenant.subscription">
-          <template #header>
-            <h3 class="text-lg font-semibold">Subscription</h3>
-          </template>
-
-          <div class="space-y-4">
-            <div>
-              <label class="text-sm text-gray-600">Status</label>
-              <div class="mt-1">
-                <UBadge
-                  :color="getStatusColor(tenant.subscription.status)"
-                  variant="subtle"
-                  size="lg"
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <!-- Main Info -->
+        <div class="lg:col-span-2 space-y-6">
+          <!-- Tenant Info Card -->
+          <UCard>
+            <template #header>
+              <div class="flex justify-between items-center">
+                <h3 class="text-lg font-semibold">Tenant Information</h3>
+                <UButton
+                  icon="i-heroicons-pencil"
+                  size="sm"
+                  variant="ghost"
+                  color="neutral"
+                  @click="openEditModal"
                 >
-                  {{ tenant.subscription.status }}
-                </UBadge>
+                  Edit
+                </UButton>
+              </div>
+            </template>
+
+            <div class="space-y-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="text-sm text-gray-600">Slug</label>
+                  <p class="font-medium">{{ tenant.slug }}</p>
+                </div>
+                <div>
+                  <label class="text-sm text-gray-600">Business Type</label>
+                  <p class="font-medium capitalize">
+                    {{ tenant.businessType }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="text-sm text-gray-600">Owner Name</label>
+                  <p class="font-medium">{{ tenant.ownerName || "-" }}</p>
+                </div>
+                <div>
+                  <label class="text-sm text-gray-600">Owner Email</label>
+                  <p class="font-medium">{{ tenant.ownerEmail || "-" }}</p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="text-sm text-gray-600">Created At</label>
+                  <ClientOnly>
+                    <p class="font-medium">
+                      {{ formatDate(tenant.createdAt) }}
+                    </p>
+                    <template #fallback>
+                      <p class="font-medium text-gray-400">Loading...</p>
+                    </template>
+                  </ClientOnly>
+                </div>
+                <div>
+                  <label class="text-sm text-gray-600">Plan</label>
+                  <p class="font-medium capitalize">{{ tenant.plan }}</p>
+                </div>
+              </div>
+            </div>
+          </UCard>
+
+          <!-- Admin Users -->
+          <UCard>
+            <template #header>
+              <div class="flex justify-between items-center">
+                <h3 class="text-lg font-semibold">Admin Users</h3>
+                <UButton
+                  icon="i-heroicons-plus"
+                  label="Add Admin"
+                  size="sm"
+                  @click="showAddUserModal = true"
+                />
+              </div>
+            </template>
+
+            <ClientOnly>
+              <UTable :data="tenant.adminUsers" :columns="userColumns">
+                <template #email-cell="{ row }">
+                  <div>
+                    <p class="font-medium text-gray-900">
+                      {{ row.original.email }}
+                    </p>
+                    <p class="text-sm text-gray-500">
+                      {{ row.original.name || "No name" }}
+                    </p>
+                  </div>
+                </template>
+
+                <template #role-cell="{ row }">
+                  <UBadge color="primary" variant="subtle">
+                    {{ row.original.role || "ADMIN" }}
+                  </UBadge>
+                </template>
+
+                <template #actions-cell="{ row }">
+                  <UButton
+                    icon="i-heroicons-trash"
+                    variant="ghost"
+                    color="error"
+                    size="sm"
+                    @click="deleteUser(row.original.id)"
+                  />
+                </template>
+              </UTable>
+              <template #fallback>
+                <div class="p-4 text-center text-gray-500">Loading...</div>
+              </template>
+            </ClientOnly>
+          </UCard>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+          <!-- Subscription Card -->
+          <UCard v-if="tenant.subscription">
+            <template #header>
+              <h3 class="text-lg font-semibold">Subscription</h3>
+            </template>
+
+            <div class="space-y-4">
+              <div>
+                <label class="text-sm text-gray-600">Status</label>
+                <div class="mt-1">
+                  <UBadge
+                    :color="getStatusColor(tenant.subscription.status)"
+                    variant="subtle"
+                    size="lg"
+                  >
+                    {{ tenant.subscription.status }}
+                  </UBadge>
+                </div>
+              </div>
+
+              <div>
+                <label class="text-sm text-gray-600">Plan</label>
+                <p class="font-medium capitalize mt-1">
+                  {{ tenant.subscription.plan }}
+                </p>
+              </div>
+
+              <div v-if="tenant.subscription.trialEndsAt">
+                <label class="text-sm text-gray-600">Trial Ends</label>
+                <p class="font-medium mt-1">
+                  {{ formatDate(tenant.subscription.trialEndsAt) }}
+                </p>
+              </div>
+
+              <div v-if="tenant.subscription.currentPeriodStart">
+                <label class="text-sm text-gray-600">Current Period</label>
+                <p class="text-sm mt-1">
+                  {{ formatDate(tenant.subscription.currentPeriodStart) }} -
+                  {{ formatDate(tenant.subscription.currentPeriodEnd) }}
+                </p>
+              </div>
+
+              <hr class="my-4 border-gray-200" />
+
+              <div class="space-y-2">
+                <UButton block color="primary" variant="soft">
+                  Upgrade Plan
+                </UButton>
+                <UButton block color="warning" variant="soft">
+                  Extend Trial
+                </UButton>
+                <UButton block color="error" variant="soft">
+                  Cancel Subscription
+                </UButton>
+              </div>
+            </div>
+          </UCard>
+
+          <!-- Actions Card -->
+          <UCard>
+            <template #header>
+              <h3 class="text-lg font-semibold">Actions</h3>
+            </template>
+
+            <div class="space-y-2">
+              <UButton
+                block
+                icon="i-heroicons-shield-check"
+                color="primary"
+                variant="soft"
+                @click="showPermissionsModal = true"
+              >
+                View Permissions
+              </UButton>
+              <UButton
+                block
+                :color="tenant.isActive ? 'error' : 'success'"
+                variant="soft"
+                @click="toggleTenantStatus"
+              >
+                {{ tenant.isActive ? "Deactivate Tenant" : "Activate Tenant" }}
+              </UButton>
+              <UButton block color="neutral" variant="soft">
+                View Logs
+              </UButton>
+              <UButton block color="neutral" variant="soft">
+                Reset Password
+              </UButton>
+            </div>
+          </UCard>
+        </div>
+      </div>
+
+      <!-- Add User Modal -->
+      <UModal
+        v-model:open="showAddUserModal"
+        title="Add Admin User"
+        description="Add a new administrator to this tenant"
+      >
+        <template #body>
+          <form class="space-y-4" @submit.prevent="addUser">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Email *</label
+              >
+              <UInput
+                v-model="newUser.email"
+                type="email"
+                required
+                placeholder="user@example.com"
+                class="w-full"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Name</label
+              >
+              <UInput
+                v-model="newUser.name"
+                placeholder="Full name"
+                class="w-full"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Password *</label
+              >
+              <UInput
+                v-model="newUser.password"
+                type="password"
+                required
+                placeholder="Min 8 characters"
+                class="w-full"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Role</label
+              >
+              <USelectMenu
+                v-model="newUser.role"
+                :items="roleOptions"
+                value-key="value"
+                placeholder="Select role"
+                class="w-full"
+              />
+            </div>
+
+            <UAlert
+              v-if="userError"
+              color="error"
+              icon="i-heroicons-exclamation-triangle"
+              :title="userError"
+            />
+          </form>
+        </template>
+
+        <template #footer="{ close }">
+          <div class="flex gap-2 justify-end">
+            <UButton variant="ghost" color="neutral" @click="close">
+              Cancel
+            </UButton>
+            <UButton color="primary" :loading="addingUser" @click="addUser">
+              Add User
+            </UButton>
+          </div>
+        </template>
+      </UModal>
+
+      <!-- Permissions Modal -->
+      <UModal
+        v-model:open="showPermissionsModal"
+        title="RBAC Permissions"
+        :description="tenant ? `${tenant.name} - ${tenant.businessType}` : ''"
+        :ui="{ width: 'max-w-4xl' }"
+      >
+        <template #body>
+          <div v-if="loadingPermissions" class="p-8 text-center">
+            <UIcon
+              name="i-heroicons-arrow-path"
+              class="w-6 h-6 animate-spin mx-auto mb-2"
+            />
+            <p class="text-gray-500">Loading permissions...</p>
+          </div>
+
+          <div v-else-if="permissionsData" class="space-y-6">
+            <!-- Summary -->
+            <div class="grid grid-cols-4 gap-4">
+              <div
+                class="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+              >
+                <p class="text-2xl font-bold text-primary-600">
+                  {{ permissionsData.summary.enabledPermissions }}
+                </p>
+                <p class="text-xs text-gray-500">Enabled</p>
+              </div>
+              <div
+                class="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+              >
+                <p class="text-2xl font-bold text-gray-600">
+                  {{ permissionsData.summary.totalPermissions }}
+                </p>
+                <p class="text-xs text-gray-500">Total</p>
+              </div>
+              <div
+                class="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+              >
+                <p class="text-2xl font-bold text-warning-600">
+                  {{ permissionsData.summary.overriddenPermissions }}
+                </p>
+                <p class="text-xs text-gray-500">Overridden</p>
+              </div>
+              <div
+                class="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+              >
+                <p class="text-2xl font-bold text-info-600">
+                  {{ permissionsData.summary.availableRoles }}
+                </p>
+                <p class="text-xs text-gray-500">Roles</p>
               </div>
             </div>
 
+            <!-- Roles -->
             <div>
-              <label class="text-sm text-gray-600">Plan</label>
-              <p class="font-medium capitalize mt-1">
-                {{ tenant.subscription.plan }}
-              </p>
-            </div>
-
-            <div v-if="tenant.subscription.trialEndsAt">
-              <label class="text-sm text-gray-600">Trial Ends</label>
-              <p class="font-medium mt-1">
-                {{ formatDate(tenant.subscription.trialEndsAt) }}
-              </p>
-            </div>
-
-            <div v-if="tenant.subscription.currentPeriodStart">
-              <label class="text-sm text-gray-600">Current Period</label>
-              <p class="text-sm mt-1">
-                {{ formatDate(tenant.subscription.currentPeriodStart) }} -
-                {{ formatDate(tenant.subscription.currentPeriodEnd) }}
-              </p>
+              <h4 class="font-semibold text-sm mb-3">Available Roles</h4>
+              <div class="flex flex-wrap gap-2">
+                <UBadge
+                  v-for="role in permissionsData.roles"
+                  :key="role.id"
+                  :color="
+                    role.code === 'OWNER'
+                      ? 'primary'
+                      : role.code === 'MANAGER'
+                        ? 'primary'
+                        : role.code === 'CASHIER'
+                          ? 'success'
+                          : role.code === 'WAITER'
+                            ? 'info'
+                            : role.code === 'KITCHEN'
+                              ? 'warning'
+                              : 'neutral'
+                  "
+                >
+                  {{ role.name }}
+                </UBadge>
+              </div>
             </div>
 
             <hr class="my-4 border-gray-200" />
 
-            <div class="space-y-2">
-              <UButton block color="primary" variant="soft">
-                Upgrade Plan
-              </UButton>
-              <UButton block color="warning" variant="soft">
-                Extend Trial
-              </UButton>
-              <UButton block color="error" variant="soft">
-                Cancel Subscription
-              </UButton>
-            </div>
-          </div>
-        </UCard>
-
-        <!-- Actions Card -->
-        <UCard>
-          <template #header>
-            <h3 class="text-lg font-semibold">Actions</h3>
-          </template>
-
-          <div class="space-y-2">
-            <UButton
-              block
-              icon="i-heroicons-shield-check"
-              color="primary"
-              variant="soft"
-              @click="showPermissionsModal = true"
-            >
-              View Permissions
-            </UButton>
-            <UButton
-              block
-              :color="tenant.isActive ? 'error' : 'success'"
-              variant="soft"
-              @click="toggleTenantStatus"
-            >
-              {{ tenant.isActive ? "Deactivate Tenant" : "Activate Tenant" }}
-            </UButton>
-            <UButton block color="neutral" variant="soft"> View Logs </UButton>
-            <UButton block color="neutral" variant="soft">
-              Reset Password
-            </UButton>
-          </div>
-        </UCard>
-      </div>
-    </div>
-  </div>
-
-  <div v-else>
-    <UAlert
-      icon="i-heroicons-exclamation-triangle"
-      color="error"
-      title="Tenant not found"
-    />
-  </div>
-
-  <!-- Add User Modal -->
-  <UModal
-    v-model:open="showAddUserModal"
-    title="Add Admin User"
-    description="Add a new administrator to this tenant"
-  >
-    <template #body>
-      <form class="space-y-4" @submit.prevent="addUser">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1"
-            >Email *</label
-          >
-          <UInput
-            v-model="newUser.email"
-            type="email"
-            required
-            placeholder="user@example.com"
-            class="w-full"
-          />
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1"
-            >Name</label
-          >
-          <UInput
-            v-model="newUser.name"
-            placeholder="Full name"
-            class="w-full"
-          />
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1"
-            >Password *</label
-          >
-          <UInput
-            v-model="newUser.password"
-            type="password"
-            required
-            placeholder="Min 8 characters"
-            class="w-full"
-          />
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1"
-            >Role</label
-          >
-          <USelectMenu
-            v-model="newUser.role"
-            :items="roleOptions"
-            value-key="value"
-            placeholder="Select role"
-            class="w-full"
-          />
-        </div>
-
-        <UAlert
-          v-if="userError"
-          color="error"
-          icon="i-heroicons-exclamation-triangle"
-          :title="userError"
-        />
-      </form>
-    </template>
-
-    <template #footer="{ close }">
-      <div class="flex gap-2 justify-end">
-        <UButton variant="ghost" color="neutral" @click="close">
-          Cancel
-        </UButton>
-        <UButton color="primary" :loading="addingUser" @click="addUser">
-          Add User
-        </UButton>
-      </div>
-    </template>
-  </UModal>
-
-  <!-- Permissions Modal -->
-  <UModal
-    v-model:open="showPermissionsModal"
-    title="RBAC Permissions"
-    :description="tenant ? `${tenant.name} - ${tenant.businessType}` : ''"
-    :ui="{ width: 'max-w-4xl' }"
-  >
-    <template #body>
-      <div v-if="loadingPermissions" class="p-8 text-center">
-        <UIcon
-          name="i-heroicons-arrow-path"
-          class="w-6 h-6 animate-spin mx-auto mb-2"
-        />
-        <p class="text-gray-500">Loading permissions...</p>
-      </div>
-
-      <div v-else-if="permissionsData" class="space-y-6">
-        <!-- Summary -->
-        <div class="grid grid-cols-4 gap-4">
-          <div class="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <p class="text-2xl font-bold text-primary-600">
-              {{ permissionsData.summary.enabledPermissions }}
-            </p>
-            <p class="text-xs text-gray-500">Enabled</p>
-          </div>
-          <div class="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <p class="text-2xl font-bold text-gray-600">
-              {{ permissionsData.summary.totalPermissions }}
-            </p>
-            <p class="text-xs text-gray-500">Total</p>
-          </div>
-          <div class="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <p class="text-2xl font-bold text-warning-600">
-              {{ permissionsData.summary.overriddenPermissions }}
-            </p>
-            <p class="text-xs text-gray-500">Overridden</p>
-          </div>
-          <div class="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <p class="text-2xl font-bold text-info-600">
-              {{ permissionsData.summary.availableRoles }}
-            </p>
-            <p class="text-xs text-gray-500">Roles</p>
-          </div>
-        </div>
-
-        <!-- Roles -->
-        <div>
-          <h4 class="font-semibold text-sm mb-3">Available Roles</h4>
-          <div class="flex flex-wrap gap-2">
-            <UBadge
-              v-for="role in permissionsData.roles"
-              :key="role.id"
-              :color="
-                role.code === 'OWNER'
-                  ? 'primary'
-                  : role.code === 'MANAGER'
-                    ? 'primary'
-                    : role.code === 'CASHIER'
-                      ? 'success'
-                      : role.code === 'WAITER'
-                        ? 'info'
-                        : role.code === 'KITCHEN'
-                          ? 'warning'
-                          : 'neutral'
-              "
-            >
-              {{ role.name }}
-            </UBadge>
-          </div>
-        </div>
-
-        <hr class="my-4 border-gray-200" />
-
-        <!-- Permissions by Category -->
-        <div class="space-y-4 max-h-96 overflow-y-auto">
-          <div
-            v-for="(perms, category) in permissionsData.grouped"
-            :key="category"
-          >
-            <h4 class="font-semibold text-sm mb-2 flex items-center gap-2">
-              <UIcon name="i-heroicons-folder" class="w-4 h-4" />
-              {{ category }}
-            </h4>
-            <div class="grid gap-2">
+            <!-- Permissions by Category -->
+            <div class="space-y-4 max-h-96 overflow-y-auto">
               <div
-                v-for="perm in perms"
-                :key="perm.id"
-                class="flex items-center justify-between p-2 rounded"
-                :class="
-                  perm.isEnabled
-                    ? 'bg-green-50 dark:bg-green-900/20'
-                    : 'bg-gray-50 dark:bg-gray-800 opacity-50'
-                "
+                v-for="(perms, category) in permissionsData.grouped"
+                :key="category"
               >
-                <div class="flex-1">
-                  <div class="flex items-center gap-2">
-                    <code class="text-xs font-medium">{{ perm.code }}</code>
-                    <UBadge v-if="perm.isOverridden" color="warning" size="xs">
-                      Override
-                    </UBadge>
-                  </div>
-                  <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                    {{ perm.description || perm.name }}
-                  </p>
-                </div>
-                <div class="flex items-center gap-2">
-                  <USwitch
-                    :model-value="perm.isEnabled"
-                    :disabled="togglingPermission === perm.id"
-                    @update:model-value="
-                      (value) => togglePermission(perm, value)
+                <h4 class="font-semibold text-sm mb-2 flex items-center gap-2">
+                  <UIcon name="i-heroicons-folder" class="w-4 h-4" />
+                  {{ category }}
+                </h4>
+                <div class="grid gap-2">
+                  <div
+                    v-for="perm in perms"
+                    :key="perm.id"
+                    class="flex items-center justify-between p-2 rounded"
+                    :class="
+                      perm.isEnabled
+                        ? 'bg-green-50 dark:bg-green-900/20'
+                        : 'bg-gray-50 dark:bg-gray-800 opacity-50'
                     "
-                  />
-                  <UButton
-                    v-if="perm.isOverridden"
-                    icon="i-heroicons-arrow-path"
-                    size="xs"
-                    variant="ghost"
-                    color="warning"
-                    :loading="removingOverride === perm.id"
-                    @click="removeOverride(perm)"
-                    title="Revert to business type default"
-                  />
+                  >
+                    <div class="flex-1">
+                      <div class="flex items-center gap-2">
+                        <code class="text-xs font-medium">{{ perm.code }}</code>
+                        <UBadge
+                          v-if="perm.isOverridden"
+                          color="warning"
+                          size="xs"
+                        >
+                          Override
+                        </UBadge>
+                      </div>
+                      <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                        {{ perm.description || perm.name }}
+                      </p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <USwitch
+                        :model-value="perm.isEnabled"
+                        :disabled="togglingPermission === perm.id"
+                        @update:model-value="
+                          (value) => togglePermission(perm, value)
+                        "
+                      />
+                      <UButton
+                        v-if="perm.isOverridden"
+                        icon="i-heroicons-arrow-path"
+                        size="xs"
+                        variant="ghost"
+                        color="warning"
+                        :loading="removingOverride === perm.id"
+                        @click="removeOverride(perm)"
+                        title="Revert to business type default"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </template>
+        </template>
 
-    <template #footer="{ close }">
-      <div class="flex justify-between items-center w-full">
-        <p class="text-xs text-gray-500">
-          Toggle permissions to override business type defaults. Orange badge
-          indicates overridden permissions.
-        </p>
-        <UButton variant="outline" color="neutral" @click="close">
-          Close
-        </UButton>
-      </div>
-    </template>
-  </UModal>
+        <template #footer="{ close }">
+          <div class="flex justify-between items-center w-full">
+            <p class="text-xs text-gray-500">
+              Toggle permissions to override business type defaults. Orange
+              badge indicates overridden permissions.
+            </p>
+            <UButton variant="outline" color="neutral" @click="close">
+              Close
+            </UButton>
+          </div>
+        </template>
+      </UModal>
+
+      <!-- Edit Tenant Modal -->
+      <UModal
+        v-model:open="showEditModal"
+        title="Edit Tenant"
+        description="Update tenant information"
+      >
+        <template #body>
+          <form class="space-y-4" @submit.prevent="saveTenant">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Tenant Name *</label
+              >
+              <UInput
+                v-model="editForm.name"
+                type="text"
+                required
+                placeholder="Enter tenant name"
+                class="w-full"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Slug *</label
+              >
+              <UInput
+                v-model="editForm.slug"
+                type="text"
+                required
+                placeholder="tenant-slug"
+                class="w-full"
+              />
+              <p class="text-xs text-gray-500 mt-1">
+                This will be used as subdomain: {{ editForm.slug }}.yourapp.com
+              </p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Business Type *</label
+              >
+              <USelectMenu
+                v-model="editForm.businessType"
+                :items="businessTypeOptions"
+                value-key="value"
+                placeholder="Select business type"
+                class="w-full"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Owner Name</label
+              >
+              <UInput
+                v-model="editForm.ownerName"
+                type="text"
+                placeholder="Owner's full name"
+                class="w-full"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Owner Email</label
+              >
+              <UInput
+                v-model="editForm.ownerEmail"
+                type="email"
+                placeholder="owner@example.com"
+                class="w-full"
+              />
+            </div>
+
+            <UAlert
+              v-if="editError"
+              color="error"
+              icon="i-heroicons-exclamation-triangle"
+              :title="editError"
+            />
+          </form>
+        </template>
+
+        <template #footer="{ close }">
+          <div class="flex gap-2 justify-end">
+            <UButton variant="ghost" color="neutral" @click="close">
+              Cancel
+            </UButton>
+            <UButton color="primary" :loading="saving" @click="saveTenant">
+              Save Changes
+            </UButton>
+          </div>
+        </template>
+      </UModal>
+    </div>
+
+    <div v-else>
+      <UAlert
+        icon="i-heroicons-exclamation-triangle"
+        color="error"
+        title="Tenant not found"
+      />
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -466,10 +595,43 @@ const {
 
 const showAddUserModal = ref(false);
 const showPermissionsModal = ref(false);
+const showEditModal = ref(false);
 const loadingPermissions = ref(false);
-const permissionsData = ref<any>(null);
+const permissionsData = ref<{
+  tenant: {
+    id: string;
+    name: string;
+    businessType: string;
+  };
+  roles: Array<{
+    id: string;
+    code: string;
+    name: string;
+    description: string;
+    hierarchy: number;
+  }>;
+  permissions: Array<{
+    id: string;
+    code: string;
+    name: string;
+    description: string;
+    category: string;
+    isEnabled: boolean;
+    isOverridden: boolean;
+    defaultEnabled: boolean;
+  }>;
+  grouped: Record<string, typeof permissionsData.value.permissions>;
+  summary: {
+    enabledPermissions: number;
+    totalPermissions: number;
+    overriddenPermissions: number;
+    availableRoles: number;
+  };
+} | null>(null);
 const addingUser = ref(false);
+const saving = ref(false);
 const userError = ref("");
+const editError = ref("");
 const togglingPermission = ref<string | null>(null);
 const removingOverride = ref<string | null>(null);
 
@@ -484,11 +646,25 @@ const roleOptions = [
 
 const defaultRole = roleOptions[2]; // STAFF
 
+const businessTypeOptions = [
+  { value: "restaurant", label: "Restaurant" },
+  { value: "retail", label: "Retail" },
+  { value: "salon", label: "Salon" },
+];
+
 const newUser = ref({
   email: "",
   name: "",
   password: "",
   role: defaultRole as { value: string; label: string } | string,
+});
+
+const editForm = ref({
+  name: "",
+  slug: "",
+  businessType: "",
+  ownerName: "",
+  ownerEmail: "",
 });
 
 // Watch for permissions modal open and fetch data
@@ -561,9 +737,13 @@ const addUser = async () => {
 
     closeAddUserModal();
     refresh();
-  } catch (error: any) {
-    userError.value =
-      error?.data?.statusMessage || error?.message || "Failed to add user";
+  } catch (error) {
+    const errorMessage =
+      error && typeof error === "object" && "data" in error
+        ? (error as { data?: { statusMessage?: string } }).data?.statusMessage
+        : "An error occurred";
+
+    userError.value = errorMessage || "Failed to add user";
     console.error("Failed to add user:", error);
   } finally {
     addingUser.value = false;
@@ -579,6 +759,57 @@ const closeAddUserModal = () => {
     password: "",
     role: defaultRole,
   };
+};
+
+const openEditModal = () => {
+  if (!tenant.value) return;
+  editForm.value = {
+    name: tenant.value.name,
+    slug: tenant.value.slug,
+    businessType: tenant.value.businessType,
+    ownerName: tenant.value.ownerName || "",
+    ownerEmail: tenant.value.ownerEmail || "",
+  };
+  editError.value = "";
+  showEditModal.value = true;
+};
+
+const saveTenant = async () => {
+  const toast = useToast();
+  editError.value = "";
+  saving.value = true;
+
+  try {
+    await $fetch(`/api/platform/tenants/${tenantId}`, {
+      method: "PATCH",
+      body: editForm.value,
+    });
+
+    toast.add({
+      title: "Tenant updated successfully",
+      icon: "i-heroicons-check-circle",
+      color: "success",
+    });
+
+    showEditModal.value = false;
+    refresh();
+  } catch (error) {
+    const errorMessage =
+      error && typeof error === "object" && "data" in error
+        ? (error as { data?: { statusMessage?: string } }).data?.statusMessage
+        : "An error occurred";
+
+    editError.value = errorMessage;
+    toast.add({
+      title: "Failed to update tenant",
+      description: errorMessage,
+      icon: "i-heroicons-exclamation-triangle",
+      color: "error",
+    });
+    console.error("Failed to update tenant:", error);
+  } finally {
+    saving.value = false;
+  }
 };
 
 const deleteUser = async (userId: string) => {
@@ -604,10 +835,15 @@ const deleteUser = async (userId: string) => {
     });
 
     refresh();
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage =
+      error && typeof error === "object" && "data" in error
+        ? (error as { data?: { statusMessage?: string } }).data?.statusMessage
+        : "An error occurred";
+
     toast.add({
       title: "Failed to delete user",
-      description: error?.data?.statusMessage || "An error occurred",
+      description: errorMessage,
       icon: "i-heroicons-exclamation-triangle",
       color: "error",
     });
@@ -638,7 +874,19 @@ const toggleTenantStatus = async () => {
   }
 };
 
-const togglePermission = async (permission: any, isEnabled: boolean) => {
+const togglePermission = async (
+  permission: {
+    id: string;
+    code: string;
+    name: string;
+    description: string;
+    category: string;
+    isEnabled: boolean;
+    isOverridden: boolean;
+    defaultEnabled: boolean;
+  },
+  isEnabled: boolean,
+) => {
   const toast = useToast();
   togglingPermission.value = permission.id;
 
@@ -662,10 +910,15 @@ const togglePermission = async (permission: any, isEnabled: boolean) => {
 
     // Refresh permissions data
     loadPermissionsData();
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage =
+      error && typeof error === "object" && "data" in error
+        ? (error as { data?: { statusMessage?: string } }).data?.statusMessage
+        : "An error occurred";
+
     toast.add({
       title: "Failed to update permission",
-      description: error?.data?.statusMessage || "An error occurred",
+      description: errorMessage,
       icon: "i-heroicons-exclamation-triangle",
       color: "error",
     });
@@ -674,7 +927,16 @@ const togglePermission = async (permission: any, isEnabled: boolean) => {
   }
 };
 
-const removeOverride = async (permission: any) => {
+const removeOverride = async (permission: {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  category: string;
+  isEnabled: boolean;
+  isOverridden: boolean;
+  defaultEnabled: boolean;
+}) => {
   const toast = useToast();
   removingOverride.value = permission.id;
 
@@ -704,10 +966,15 @@ const removeOverride = async (permission: any) => {
 
     // Refresh permissions data
     loadPermissionsData();
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage =
+      error && typeof error === "object" && "data" in error
+        ? (error as { data?: { statusMessage?: string } }).data?.statusMessage
+        : "An error occurred";
+
     toast.add({
       title: "Failed to remove override",
-      description: error?.data?.statusMessage || "An error occurred",
+      description: errorMessage,
       icon: "i-heroicons-exclamation-triangle",
       color: "error",
     });

@@ -9,6 +9,8 @@ const menuItemUpdateSchema = z.object({
   isAvailable: z.boolean().optional(),
   isFeatured: z.boolean().optional(),
   sortOrder: z.number().optional(),
+  stock: z.number().int().min(0).optional().nullable(),
+  sku: z.string().optional().nullable(),
 });
 
 export default defineEventHandler(async (event) => {

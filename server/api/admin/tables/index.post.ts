@@ -1,6 +1,7 @@
 import { z } from "zod";
 import prisma from "~/server/db/prisma";
 import { requirePermission } from "~/server/utils/auth-helpers";
+import { checkResourceLimit } from "~/server/utils/feature-gating";
 
 const createTableSchema = z.object({
   tableCode: z.string().min(1),
@@ -16,6 +17,9 @@ const createTableSchema = z.object({
 export default defineEventHandler(async (event) => {
   const session = await requirePermission(event, "MANAGE_TABLES");
   const tenantId = session.user.tenantId!;
+
+  // Check plan limit before creating
+  await checkResourceLimit(event, "tables");
 
   const body = await readBody(event);
   const data = createTableSchema.parse(body);

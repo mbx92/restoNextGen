@@ -1,10 +1,18 @@
 <script setup lang="ts">
 const { confirm } = useConfirmDialog();
+const { requireFeature } = useFeatures();
 
 definePageMeta({
   layout: "admin",
   middleware: ["admin-auth"],
 });
+
+// Check if CMS feature is enabled
+if (
+  !requireFeature("CONTENT_MANAGEMENT_SERVICE", "Content Management Service")
+) {
+  // requireFeature will show toast and navigate to settings if feature is not available
+}
 
 interface Hero {
   id: string;

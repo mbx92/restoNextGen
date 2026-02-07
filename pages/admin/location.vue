@@ -1,8 +1,17 @@
 <script setup lang="ts">
+const { requireFeature } = useFeatures();
+
 definePageMeta({
   layout: "admin",
   middleware: ["admin-auth"],
 });
+
+// Check if CMS feature is enabled
+if (
+  !requireFeature("CONTENT_MANAGEMENT_SERVICE", "Content Management Service")
+) {
+  // requireFeature will show toast and navigate to settings if feature is not available
+}
 
 const { data: info, refresh } = await useFetch("/api/admin/restaurant-info");
 

@@ -223,7 +223,8 @@ const columns = [
       />
       <USelectMenu
         v-model="statusFilter"
-        :options="statusOptions"
+        :items="statusOptions"
+        value-key="value"
         placeholder="Filter by status"
         class="w-full sm:w-64"
       />

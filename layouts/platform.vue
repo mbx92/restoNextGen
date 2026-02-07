@@ -100,6 +100,16 @@ const menuItems = [
     icon: "i-heroicons-building-storefront",
   },
   {
+    label: "Plans",
+    to: "/platform/plans",
+    icon: "i-heroicons-rectangle-stack",
+  },
+  {
+    label: "Features",
+    to: "/platform/features",
+    icon: "i-heroicons-sparkles",
+  },
+  {
     label: "RBAC",
     to: "/platform/rbac",
     icon: "i-heroicons-shield-check",

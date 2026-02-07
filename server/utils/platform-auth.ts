@@ -6,7 +6,7 @@ import type { H3Event } from "h3";
 export async function requirePlatformAdmin(event: H3Event): Promise<void> {
   const session = await getUserSession(event);
 
-  if (!session?.user?.isPlatformAdmin) {
+  if (!session?.platformAdmin) {
     throw createError({
       statusCode: 403,
       statusMessage: "Forbidden: Platform admin access required",

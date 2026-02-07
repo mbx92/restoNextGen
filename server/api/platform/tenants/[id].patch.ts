@@ -1,32 +1,54 @@
-import { prisma } from "~/server/db/prisma";
+import { z } from "zod";
+import { requirePlatformAdmin } from "~/server/utils/platform-auth";
 
+const updateTenantSchema = z.object({
+  name: z.string().min(1).optional(),
+  slug: z.string().min(1).optional(),
+  businessType: z.enum(["restaurant", "retail", "salon"]).optional(),
+  ownerName: z.string().optional(),
+  ownerEmail: z.string().email().optional(),
+  isActive: z.boolean().optional(),
+});
+
+/**
+ * PATCH /api/platform/tenants/:id
+ * Update a tenant
+ */
 export default defineEventHandler(async (event) => {
-  const session = await getUserSession(event);
-
-  // Check if user is platform admin
-  if (!session.user?.isPlatformAdmin) {
-    throw createError({
-      statusCode: 403,
-      message: "Forbidden: Platform admin access required",
-    });
-  }
-
+  await requirePlatformAdmin(event);
+  const prisma = usePrisma();
   const tenantId = getRouterParam(event, "id");
+  const body = await readBody(event);
 
   if (!tenantId) {
     throw createError({
       statusCode: 400,
-      message: "Tenant ID is required",
+      statusMessage: "Tenant ID is required",
     });
   }
 
-  const body = await readBody(event);
+  const data = updateTenantSchema.parse(body);
+
+  // Check if slug is being updated and if it's unique
+  if (data.slug) {
+    const existingTenant = await prisma.tenant.findFirst({
+      where: {
+        slug: data.slug,
+        id: { not: tenantId },
+      },
+    });
+
+    if (existingTenant) {
+      throw createError({
+        statusCode: 409,
+        statusMessage: "Slug already exists",
+      });
+    }
+  }
 
   const tenant = await prisma.tenant.update({
     where: { id: tenantId },
-    data: {
-      isActive: body.isActive,
-    },
+    data,
   });
 
   return tenant;

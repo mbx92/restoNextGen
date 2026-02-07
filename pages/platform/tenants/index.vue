@@ -135,6 +135,8 @@
 </template>
 
 <script setup lang="ts">
+const { confirm } = useConfirmDialog();
+
 type Tenant = {
   id: string;
   name: string;
@@ -160,6 +162,7 @@ const {
   data: tenants,
   pending,
   error: _error,
+  refresh,
 } = await useFetch<Tenant[]>("/api/platform/tenants");
 
 const isCreateModalOpen = ref(false);
@@ -253,11 +256,53 @@ const viewTenantDetails = (tenantId: string) => {
 };
 
 const editTenant = (tenantId: string) => {
-  console.log("Edit", tenantId);
+  navigateTo(`/platform/tenants/${tenantId}`);
 };
 
-const toggleTenantActive = (tenantId: string) => {
-  console.log("Toggle active", tenantId);
+const toggleTenantActive = async (tenantId: string) => {
+  const toast = useToast();
+
+  const confirmed = await confirm({
+    title: "Toggle Tenant Status",
+    message: "Are you sure you want to toggle this tenant's status?",
+    confirmText: "Confirm",
+    confirmColor: "primary",
+  });
+  if (!confirmed) return;
+
+  try {
+    const tenant = tenants.value?.find((t: Tenant) => t.id === tenantId);
+    if (!tenant) return;
+
+    await $fetch(`/api/platform/tenants/${tenantId}`, {
+      method: "PATCH",
+      body: {
+        isActive: !tenant.isActive,
+      },
+    });
+
+    toast.add({
+      title: "Tenant status updated",
+      icon: "i-heroicons-check-circle",
+      color: "success",
+    });
+
+    // Refresh the tenant list
+    await refresh();
+  } catch (error) {
+    const errorMessage =
+      error && typeof error === "object" && "data" in error
+        ? (error as { data?: { statusMessage?: string } }).data?.statusMessage
+        : "An error occurred";
+
+    toast.add({
+      title: "Failed to update tenant status",
+      description: errorMessage,
+      icon: "i-heroicons-exclamation-triangle",
+      color: "error",
+    });
+    console.error("Failed to toggle tenant status:", error);
+  }
 };
 
 const getActions = (tenant: Tenant) => [

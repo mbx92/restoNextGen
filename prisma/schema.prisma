@@ -25,6 +25,102 @@ model PlatformAdmin {
   @@map("platform_admin")
 }
 
+model Plan {
+  id              String   @id @default(cuid())
+  name            String   @unique // "Free", "Starter", "Pro", "Enterprise"
+  slug            String   @unique // "free", "starter", "pro", "enterprise"
+  description     String?
+  price           Int      @default(0) // in cents (e.g., 9900 = $99.00)
+  billingInterval String   @default("month") // "month", "year"
+  features        Json // Array of features (legacy, being replaced by PlanFeature)
+  limits          Json // Resource limits: { menuItems: 100, tables: 10, orders: 1000 }
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  subscriptions Subscription[]
+  planFeatures  PlanFeature[]
+
+  @@index([slug])
+  @@index([isActive])
+  @@map("plan")
+}
+
+// Feature Category - organize features into categories
+model FeatureCategory {
+  id          String   @id @default(cuid())
+  code        String   @unique // "branding", "analytics", "integrations"
+  name        String // "Branding", "Analytics"
+  description String?
+  icon        String? // Icon class/name for UI
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  features Feature[]
+
+  @@index([code])
+  @@index([sortOrder])
+  @@map("feature_category")
+}
+
+// Feature catalog - defines available features across the platform
+model Feature {
+  id          String   @id @default(cuid())
+  code        String   @unique // "CUSTOM_DOMAIN", "ADVANCED_ANALYTICS", "API_ACCESS"
+  name        String // "Custom Domain", "Advanced Analytics"
+  description String?
+  categoryId  String? // Reference to FeatureCategory
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  category        FeatureCategory?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  planFeatures    PlanFeature[]
+  tenantOverrides TenantFeatureOverride[]
+
+  @@index([code])
+  @@index([categoryId])
+  @@map("feature")
+}
+
+// Plan-Feature mapping - which features are available in each plan
+model PlanFeature {
+  planId    String
+  featureId String
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  plan    Plan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  feature Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@id([planId, featureId])
+  @@index([planId])
+  @@index([featureId])
+  @@map("plan_feature")
+}
+
+// Tenant-specific feature overrides - allow/deny specific features per tenant
+model TenantFeatureOverride {
+  tenantId  String
+  featureId String
+  enabled   Boolean
+  reason    String? // Optional: why this override exists
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  feature Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@id([tenantId, featureId])
+  @@index([tenantId])
+  @@index([featureId])
+  @@map("tenant_feature_override")
+}
+
 enum SubscriptionStatus {
   TRIAL
   ACTIVE
@@ -36,7 +132,8 @@ enum SubscriptionStatus {
 model Subscription {
   id                 String             @id @default(cuid())
   tenantId           String             @unique
-  plan               String // "free", "starter", "pro", "enterprise"
+  plan               String? // Legacy: "free", "starter", "pro", "enterprise" - nullable for migration
+  planId             String? // FK to Plan - nullable for migration
   status             SubscriptionStatus @default(TRIAL)
   currentPeriodStart DateTime?
   currentPeriodEnd   DateTime?
@@ -46,9 +143,11 @@ model Subscription {
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant       Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  planRelation Plan?  @relation(fields: [planId], references: [id], onDelete: Restrict)
 
   @@index([tenantId])
+  @@index([planId])
   @@index([status])
   @@map("subscription")
 }
@@ -92,6 +191,9 @@ model Tenant {
 
   // RBAC relations
   tenantPermissionOverrides TenantPermissionOverride[]
+
+  // Feature gating
+  tenantFeatureOverrides TenantFeatureOverride[]
 
   @@index([ownerEmail])
   @@map("tenant")
@@ -287,6 +389,8 @@ model MenuItem {
   isAvailable Boolean  @default(true)
   isFeatured  Boolean  @default(false)
   sortOrder   Int      @default(0)
+  stock       Int? // null = unlimited stock, 0 = out of stock
+  sku         String? // Stock Keeping Unit
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -560,6 +664,12 @@ model SystemSettings {
   lowStockThreshold       Int      @default(10)
   enableReservations      Boolean  @default(true)
   enableOnlineOrdering    Boolean  @default(true)
+  // Printer Settings
+  enablePrinter           Boolean  @default(false)
+  printerType             String   @default("EPSON_TM_T82") // EPSON_TM_T82, etc
+  printerIpAddress        String?
+  printerPort             Int      @default(9100)
+  autoPrintReceipt        Boolean  @default(false)
   updatedAt               DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)

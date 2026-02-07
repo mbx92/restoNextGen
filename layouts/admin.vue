@@ -2,6 +2,7 @@
 import { PERMISSIONS } from "~/server/utils/rbac";
 
 const { data: session } = await useFetch("/api/admin/auth/session");
+const { hasFeature } = useFeatures();
 const router = useRouter();
 const isOpen = ref(false);
 
@@ -165,6 +166,11 @@ const navItems = computed(() => {
       ],
     },
     {
+      label: "Plan & Features",
+      to: "/admin/features",
+      icon: "i-heroicons-sparkles",
+    },
+    {
       label: "Settings",
       icon: "i-heroicons-cog-6-tooth",
       permission: "MANAGE_SETTINGS",
@@ -200,10 +206,19 @@ const navItems = computed(() => {
 
   const allItems = [...baseItems, ...moduleItems, ...commonItems];
 
-  // Filter by permissions
+  // Filter by permissions and features
   return allItems.filter((item) => {
-    if (!item.permission) return true;
-    return canAccess(item.permission);
+    // Check permission
+    if (item.permission && !canAccess(item.permission)) {
+      return false;
+    }
+
+    // Check feature gate for CMS menu
+    if (item.label === "CMS" && !hasFeature("CONTENT_MANAGEMENT_SERVICE")) {
+      return false;
+    }
+
+    return true;
   });
 });
 

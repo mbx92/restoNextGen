@@ -19,6 +19,11 @@ const { data: settings, refresh: refreshSettings } = await useFetch<{
   lowStockThreshold: number;
   enableReservations: boolean;
   enableOnlineOrdering: boolean;
+  enablePrinter: boolean;
+  printerType: string;
+  printerIpAddress: string | null;
+  printerPort: number;
+  autoPrintReceipt: boolean;
   updatedAt: string;
 } | null>("/api/admin/system-settings");
 
@@ -32,6 +37,11 @@ const settingsForm = ref({
   lowStockThreshold: 10,
   enableReservations: true,
   enableOnlineOrdering: true,
+  enablePrinter: false,
+  printerType: "EPSON_TM_T82",
+  printerIpAddress: "",
+  printerPort: 9100,
+  autoPrintReceipt: false,
 });
 
 // Load settings when data is available
@@ -49,6 +59,11 @@ watch(
         lowStockThreshold: newSettings.lowStockThreshold,
         enableReservations: newSettings.enableReservations,
         enableOnlineOrdering: newSettings.enableOnlineOrdering,
+        enablePrinter: newSettings.enablePrinter,
+        printerType: newSettings.printerType,
+        printerIpAddress: newSettings.printerIpAddress || "",
+        printerPort: newSettings.printerPort,
+        autoPrintReceipt: newSettings.autoPrintReceipt,
       };
     }
   },
@@ -236,6 +251,89 @@ const currencyOptions = [
             <p class="text-xs text-stone-500 mt-1">
               Alert when stock falls below this number
             </p>
+          </div>
+        </div>
+      </UCard>
+
+      <!-- Printer Settings -->
+      <UCard>
+        <template #header>
+          <h3 class="text-lg font-semibold text-stone-900">Printer Settings</h3>
+        </template>
+
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <label class="text-sm font-medium text-stone-700">
+                Enable Printer
+              </label>
+              <p class="text-xs text-stone-500">
+                Enable receipt printing via network printer
+              </p>
+            </div>
+            <USwitch v-model="settingsForm.enablePrinter" />
+          </div>
+
+          <div
+            v-if="settingsForm.enablePrinter"
+            class="space-y-4 pt-4 border-t"
+          >
+            <div>
+              <label class="text-sm font-medium text-stone-700 mb-2 block">
+                Printer Type
+              </label>
+              <UInput
+                v-model="settingsForm.printerType"
+                disabled
+                class="w-full mb-4 bg-stone-50"
+              />
+              <p class="text-xs text-stone-500 mt-1">
+                Currently supports: Epson TM-T82 (LAN/Ethernet)
+              </p>
+            </div>
+
+            <div>
+              <label class="text-sm font-medium text-stone-700 mb-2 block">
+                Printer IP Address
+              </label>
+              <UInput
+                v-model="settingsForm.printerIpAddress"
+                placeholder="e.g., 192.168.1.100"
+                class="w-full mb-4"
+              />
+              <p class="text-xs text-stone-500 mt-1">
+                IP address of your Epson TM-T82 printer on the network
+              </p>
+            </div>
+
+            <div>
+              <label class="text-sm font-medium text-stone-700 mb-2 block">
+                Printer Port
+              </label>
+              <UInput
+                v-model.number="settingsForm.printerPort"
+                type="number"
+                min="1"
+                max="65535"
+                placeholder="9100"
+                class="w-full mb-4"
+              />
+              <p class="text-xs text-stone-500 mt-1">
+                Default port for Epson network printers: 9100
+              </p>
+            </div>
+
+            <div class="flex items-center justify-between pt-4 border-t">
+              <div>
+                <label class="text-sm font-medium text-stone-700">
+                  Auto-Print Receipt
+                </label>
+                <p class="text-xs text-stone-500">
+                  Automatically print receipt after checkout
+                </p>
+              </div>
+              <USwitch v-model="settingsForm.autoPrintReceipt" />
+            </div>
           </div>
         </div>
       </UCard>

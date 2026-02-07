@@ -1,9 +1,11 @@
+import { requirePlatformAdmin } from "~/server/utils/platform-auth";
+
 /**
  * GET /api/platform/rbac/business-types/:type
  * Get RBAC configuration for a specific business type
  */
 export default defineEventHandler(async (event) => {
-  // TODO: Add platform admin auth check
+  await requirePlatformAdmin(event);
   const businessType = getRouterParam(event, "type")?.toUpperCase();
 
   if (!businessType) {

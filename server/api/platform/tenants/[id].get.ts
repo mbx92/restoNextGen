@@ -1,22 +1,18 @@
-import { prisma } from "~/server/db/prisma";
+import { requirePlatformAdmin } from "~/server/utils/platform-auth";
 
+/**
+ * GET /api/platform/tenants/:id
+ * Get a tenant by ID
+ */
 export default defineEventHandler(async (event) => {
-  const session = await getUserSession(event);
-
-  // Check if user is platform admin
-  if (!session.user?.isPlatformAdmin) {
-    throw createError({
-      statusCode: 403,
-      message: "Forbidden: Platform admin access required",
-    });
-  }
-
+  await requirePlatformAdmin(event);
+  const prisma = usePrisma();
   const tenantId = getRouterParam(event, "id");
 
   if (!tenantId) {
     throw createError({
       statusCode: 400,
-      message: "Tenant ID is required",
+      statusMessage: "Tenant ID is required",
     });
   }
 
@@ -41,7 +37,7 @@ export default defineEventHandler(async (event) => {
   if (!tenant) {
     throw createError({
       statusCode: 404,
-      message: "Tenant not found",
+      statusMessage: "Tenant not found",
     });
   }
 

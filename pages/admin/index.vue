@@ -130,6 +130,12 @@ const formatPrice = (price: number) => {
         </div>
       </div>
 
+      <!-- Plan Usage & Features -->
+      <div class="mb-8 grid gap-6 lg:grid-cols-2">
+        <AdminPlanUsageCard />
+        <AdminFeaturesCard />
+      </div>
+
       <!-- Recent Transactions for Retail -->
       <div class="rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
         <div class="flex items-center justify-between mb-4">
@@ -261,6 +267,12 @@ const formatPrice = (price: number) => {
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Plan Usage & Features -->
+      <div class="mb-8 grid gap-6 lg:grid-cols-2">
+        <AdminPlanUsageCard />
+        <AdminFeaturesCard />
       </div>
 
       <!-- Order Queue for Restaurant -->

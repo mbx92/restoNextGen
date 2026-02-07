@@ -229,7 +229,7 @@ const columns = [
       />
       <USelectMenu
         v-model="selectedCategory"
-        :options="categoryOptions"
+        :items="categoryOptions"
         value-key="value"
         placeholder="Filter by category"
         class="w-full sm:w-64"

@@ -1,4 +1,11 @@
+import { requirePlatformAdmin } from "~/server/utils/platform-auth";
+
+/**
+ * GET /api/platform/tenants/:id/permissions
+ * Get permissions for a tenant
+ */
 export default defineEventHandler(async (event) => {
+  await requirePlatformAdmin(event);
   const tenantId = getRouterParam(event, "id");
 
   if (!tenantId) {

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { checkResourceLimit } from "~/server/utils/feature-gating";
 
 const menuItemSchema = z.object({
   categoryId: z.string().optional(),
@@ -9,10 +10,16 @@ const menuItemSchema = z.object({
   isAvailable: z.boolean().optional(),
   isFeatured: z.boolean().optional(),
   sortOrder: z.number().optional(),
+  stock: z.number().int().min(0).optional().nullable(),
+  sku: z.string().optional().nullable(),
 });
 
 export default defineEventHandler(async (event) => {
   const tenantId = await getTenantId(event);
+
+  // Check plan limit before creating
+  await checkResourceLimit(event, "menuItems");
+
   const body = await readBody(event);
   const data = menuItemSchema.parse(body);
 
@@ -29,6 +36,8 @@ export default defineEventHandler(async (event) => {
       isAvailable: data.isAvailable ?? true,
       isFeatured: data.isFeatured ?? false,
       sortOrder: data.sortOrder ?? 0,
+      stock: data.stock ?? null,
+      sku: data.sku || null,
     },
     include: {
       category: true,

@@ -1202,6 +1202,8 @@ async function main() {
         name: "Indomie Goreng",
         description: "Mi instan goreng rasa original",
         price: 3500,
+        stock: 50,
+        sku: "FOOD-001",
         photoUrl:
           "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=400",
       },
@@ -1210,6 +1212,8 @@ async function main() {
         name: "Aqua 600ml",
         description: "Air mineral kemasan 600ml",
         price: 4000,
+        stock: 30,
+        sku: "DRINK-001",
         photoUrl:
           "https://images.unsplash.com/photo-1523362628745-0c100150b504?w=400",
       },
@@ -1218,6 +1222,8 @@ async function main() {
         name: "Sabun Cuci Piring",
         description: "Sabun cuci piring formula anti bakteri",
         price: 12000,
+        stock: 5,
+        sku: "HOME-001",
         photoUrl:
           "https://images.unsplash.com/photo-1563241527-3004b7be0ffd?w=400",
       },
@@ -1226,6 +1232,8 @@ async function main() {
         name: "Masker Kesehatan",
         description: "Masker 3 ply isi 10 pcs",
         price: 15000,
+        stock: 0,
+        sku: "HEALTH-001",
         photoUrl:
           "https://images.unsplash.com/photo-1584370830116-95c1095d7b1a?w=400",
       },
@@ -1234,6 +1242,8 @@ async function main() {
         name: "Kabel USB Type-C",
         description: "Kabel charger USB Type-C 1 meter",
         price: 25000,
+        stock: 15,
+        sku: "ELEC-001",
         photoUrl:
           "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=400",
       },
@@ -1248,6 +1258,8 @@ async function main() {
           description: product.description,
           price: product.price,
           photoUrl: product.photoUrl,
+          stock: product.stock,
+          sku: product.sku,
           isAvailable: true,
           isFeatured: false,
         },

@@ -38,6 +38,23 @@ export default defineEventHandler(async (event) => {
 
   // Create order with items and payment in a transaction
   const order = await prisma.$transaction(async (tx) => {
+    // Check stock availability for items with stock tracking
+    for (const item of body.items) {
+      const menuItem = await tx.menuItem.findUnique({
+        where: { id: item.menuItemId },
+        select: { stock: true, name: true },
+      });
+
+      if (menuItem && menuItem.stock !== null && menuItem.stock !== undefined) {
+        if (menuItem.stock < item.quantity) {
+          throw createError({
+            statusCode: 400,
+            statusMessage: `Insufficient stock for ${menuItem.name}. Available: ${menuItem.stock}, Requested: ${item.quantity}`,
+          });
+        }
+      }
+    }
+
     // Create the order
     const newOrder = await tx.order.create({
       data: {
@@ -66,6 +83,21 @@ export default defineEventHandler(async (event) => {
         items: true,
       },
     });
+
+    // Deduct stock for items with stock tracking
+    for (const item of body.items) {
+      await tx.menuItem.updateMany({
+        where: {
+          id: item.menuItemId,
+          stock: { not: null }, // Only update items with stock tracking
+        },
+        data: {
+          stock: {
+            decrement: item.quantity,
+          },
+        },
+      });
+    }
 
     // Determine payment provider based on payment method
     const provider = body.paymentMethod === "cash" ? "CASH" : "MIDTRANS";

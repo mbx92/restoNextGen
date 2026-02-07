@@ -17,6 +17,11 @@ export default defineEventHandler(async (event) => {
       lowStockThreshold: body.lowStockThreshold,
       enableReservations: body.enableReservations,
       enableOnlineOrdering: body.enableOnlineOrdering,
+      enablePrinter: body.enablePrinter,
+      printerType: body.printerType,
+      printerIpAddress: body.printerIpAddress || null,
+      printerPort: body.printerPort,
+      autoPrintReceipt: body.autoPrintReceipt,
     },
     create: {
       tenantId,
@@ -29,6 +34,11 @@ export default defineEventHandler(async (event) => {
       lowStockThreshold: body.lowStockThreshold,
       enableReservations: body.enableReservations,
       enableOnlineOrdering: body.enableOnlineOrdering,
+      enablePrinter: body.enablePrinter,
+      printerType: body.printerType,
+      printerIpAddress: body.printerIpAddress || null,
+      printerPort: body.printerPort,
+      autoPrintReceipt: body.autoPrintReceipt,
     },
   });
 

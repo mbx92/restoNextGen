@@ -1,9 +1,11 @@
+import { requirePlatformAdmin } from "~/server/utils/platform-auth";
+
 /**
  * GET /api/platform/rbac/roles
  * List all roles with their permissions (platform admin only)
  */
 export default defineEventHandler(async (event) => {
-  // TODO: Add platform admin auth check
+  await requirePlatformAdmin(event);
   const prisma = usePrisma();
 
   const roles = await prisma.role.findMany({

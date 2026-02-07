@@ -175,6 +175,14 @@ async function handleLogin() {
             >
               🧑 Customer
             </UButton>
+            <UButton
+              color="neutral"
+              variant="soft"
+              size="xs"
+              @click="quickLogin('admin@tokosejahtera.com', 'admin123')"
+            >
+              🏪 Retail
+            </UButton>
           </div>
 
           <div class="text-center pt-2 text-xs text-gray-500">

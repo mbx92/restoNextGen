@@ -1,4 +1,7 @@
-export default defineEventHandler(async () => {
+import { requirePlatformAdmin } from "~/server/utils/platform-auth";
+
+export default defineEventHandler(async (event) => {
+  await requirePlatformAdmin(event);
   const prisma = usePrisma();
 
   const [totalTenants, subscriptions] = await Promise.all([

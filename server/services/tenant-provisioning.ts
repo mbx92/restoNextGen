@@ -90,17 +90,28 @@ export async function provisionTenant(
         },
       });
 
-      // 3. Create subscription
+      // 3. Get the plan to use
+      const planSlug = data.plan || "free";
+      const plan = await tx.plan.findUnique({
+        where: { slug: planSlug },
+      });
+
+      if (!plan) {
+        throw new Error(`Plan '${planSlug}' not found`);
+      }
+
+      // 4. Create subscription
       await tx.subscription.create({
         data: {
           tenantId: tenant.id,
-          plan: data.plan || "free",
+          planId: plan.id,
+          plan: planSlug, // Keep legacy field for now
           status: "TRIAL",
           trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days trial
         },
       });
 
-      // 4. Create business info
+      // 5. Create business info
       await tx.businessInfo.create({
         data: {
           tenantId: tenant.id,
@@ -109,7 +120,7 @@ export async function provisionTenant(
         },
       });
 
-      // 5. Create theme config
+      // 6. Create theme config
       await tx.themeConfig.create({
         data: {
           tenantId: tenant.id,
@@ -120,7 +131,7 @@ export async function provisionTenant(
         },
       });
 
-      // 6. Create default site settings
+      // 7. Create default site settings
       await tx.siteSettings.create({
         data: {
           tenantId: tenant.id,
@@ -137,7 +148,7 @@ export async function provisionTenant(
         },
       });
 
-      // 7. Business-specific setup
+      // 8. Business-specific setup
       if (data.businessType === "restaurant") {
         // Create default category
         const category = await tx.category.create({

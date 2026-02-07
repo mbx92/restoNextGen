@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { hash } from "bcrypt";
 import { requirePermission } from "~/server/utils/auth-helpers";
+import { checkResourceLimit } from "~/server/utils/feature-gating";
 
 const createUserSchema = z.object({
   email: z.string().email(),
@@ -32,6 +33,9 @@ export default defineEventHandler(async (event) => {
       statusMessage: "No tenant associated with user session",
     });
   }
+
+  // Check plan limit before creating
+  await checkResourceLimit(event, "users");
 
   const prisma = usePrisma();
 

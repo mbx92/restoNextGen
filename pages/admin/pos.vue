@@ -12,7 +12,7 @@ interface Product {
   price: number;
   photoUrl: string | null;
   isAvailable: boolean;
-  stock?: number;
+  stock?: number | null; // null/undefined = unlimited stock, 0 = out of stock
   category: {
     id: string;
     name: string;
@@ -28,6 +28,11 @@ const { data: products } = await useFetch<Product[]>("/api/admin/menu/items");
 const { data: categories } = await useFetch<{ id: string; name: string }[]>(
   "/api/admin/categories",
 );
+const { data: systemSettings } = await useFetch<{
+  enableTax: boolean;
+  taxRate: number;
+  taxName: string;
+}>("/api/admin/system-settings");
 
 // Cart state
 const cart = ref<CartItem[]>([]);
@@ -45,9 +50,7 @@ const selectedCategory = ref("ALL");
 
 const availableProducts = computed(() => {
   if (!products.value) return [];
-  return products.value.filter(
-    (p) => p.isAvailable && (p.stock === undefined || p.stock > 0),
-  );
+  return products.value.filter((p) => p.isAvailable);
 });
 
 const filteredProducts = computed(() => {
@@ -77,16 +80,38 @@ const categoryOptions = computed(() => {
   return [allOption, ...categoriesList];
 });
 
+// Helper function to check if product is out of stock
+const isOutOfStock = (product: Product) => {
+  // If stock is explicitly set to 0, it's out of stock
+  if (product.stock === 0) return true;
+  // If stock is null or undefined, it's unlimited (not out of stock)
+  return false;
+};
+
 // Cart functions
 const addToCart = (product: Product) => {
+  // Prevent adding out of stock items
+  if (isOutOfStock(product)) {
+    toast.add({
+      title: "Out of Stock",
+      description: "This item is currently out of stock",
+      color: "warning",
+    });
+    return;
+  }
+
   const existing = cart.value.find((item) => item.product.id === product.id);
 
   if (existing) {
-    // Check stock
-    if (product.stock !== undefined && existing.quantity >= product.stock) {
+    // Check stock limit (only if stock tracking is enabled for this product)
+    if (
+      product.stock !== null &&
+      product.stock !== undefined &&
+      existing.quantity >= product.stock
+    ) {
       toast.add({
         title: "Stock Limit",
-        description: "Cannot add more than available stock",
+        description: `Cannot add more than available stock (${product.stock})`,
         color: "warning",
       });
       return;
@@ -115,11 +140,15 @@ const updateQuantity = (productId: string, delta: number) => {
     return;
   }
 
-  // Check stock
-  if (item.product.stock !== undefined && newQty > item.product.stock) {
+  // Check stock (only if stock tracking is enabled for this product)
+  if (
+    item.product.stock !== null &&
+    item.product.stock !== undefined &&
+    newQty > item.product.stock
+  ) {
     toast.add({
       title: "Stock Limit",
-      description: "Cannot add more than available stock",
+      description: `Cannot add more than available stock (${item.product.stock})`,
       color: "warning",
     });
     return;
@@ -141,7 +170,10 @@ const subtotal = computed(() => {
   );
 });
 
-const tax = computed(() => subtotal.value * 0.11); // 11% PPN
+const tax = computed(() => {
+  if (!systemSettings.value?.enableTax) return 0;
+  return subtotal.value * (systemSettings.value.taxRate / 100);
+});
 const total = computed(() => subtotal.value + tax.value);
 
 const totalItems = computed(() => {
@@ -260,7 +292,7 @@ const quickAmounts = [50000, 100000, 150000, 200000, 500000];
         </div>
         <USelectMenu
           v-model="selectedCategory"
-          :options="categoryOptions"
+          :items="categoryOptions"
           value-key="value"
           placeholder="Filter by category"
           class="w-48"
@@ -276,12 +308,16 @@ const quickAmounts = [50000, 100000, 150000, 200000, 500000];
           <button
             v-for="product in filteredProducts"
             :key="product.id"
-            class="group bg-white border border-stone-200 rounded-xl overflow-hidden hover:shadow-lg hover:border-primary-500 transition-all duration-200 text-left flex flex-col relative active:scale-95"
+            type="button"
+            class="group bg-white border border-stone-200 rounded-xl overflow-hidden transition-all duration-200 text-left flex flex-col relative"
             :class="{
-              'opacity-60': product.stock !== undefined && product.stock === 0,
+              'opacity-50 cursor-not-allowed pointer-events-none':
+                isOutOfStock(product),
+              'hover:shadow-lg hover:border-primary-500 active:scale-95':
+                !isOutOfStock(product),
             }"
-            @click="addToCart(product)"
-            :disabled="product.stock !== undefined && product.stock === 0"
+            :disabled="isOutOfStock(product)"
+            @click="!isOutOfStock(product) && addToCart(product)"
           >
             <!-- Image Area -->
             <div class="aspect-4/3 bg-stone-100 relative overflow-hidden">
@@ -300,10 +336,10 @@ const quickAmounts = [50000, 100000, 150000, 200000, 500000];
 
               <!-- Stock Badge -->
               <div
-                v-if="product.stock !== undefined"
+                v-if="product.stock !== undefined && product.stock !== null"
                 class="absolute top-2 right-2 px-2 py-0.5 rounded text-xs font-medium backdrop-blur-md"
                 :class="
-                  product.stock === 0
+                  isOutOfStock(product)
                     ? 'bg-red-500/90 text-white'
                     : product.stock < 10
                       ? 'bg-amber-500/90 text-white'
@@ -311,7 +347,9 @@ const quickAmounts = [50000, 100000, 150000, 200000, 500000];
                 "
               >
                 {{
-                  product.stock === 0 ? "Out of Stock" : `${product.stock} Left`
+                  isOutOfStock(product)
+                    ? "Out of Stock"
+                    : `${product.stock} Left`
                 }}
               </div>
             </div>
@@ -451,8 +489,15 @@ const quickAmounts = [50000, 100000, 150000, 200000, 500000];
             <span>Subtotal</span>
             <span>{{ formatPrice(subtotal) }}</span>
           </div>
-          <div class="flex justify-between text-sm text-stone-600">
-            <span>Tax (11%)</span>
+          <div
+            v-if="systemSettings?.enableTax && tax > 0"
+            class="flex justify-between text-sm text-stone-600"
+          >
+            <span
+              >{{ systemSettings?.taxName || "Tax" }} ({{
+                systemSettings?.taxRate || 0
+              }}%)</span
+            >
             <span>{{ formatPrice(tax) }}</span>
           </div>
           <div

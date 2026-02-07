@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 const { confirm } = useConfirmDialog();
+const { handleError } = useApiErrorHandler();
+const { canCreate } = usePlanLimits();
 
 definePageMeta({
   layout: "admin",
@@ -91,6 +93,11 @@ const openEditModal = (item: MenuItem) => {
 };
 
 const saveItem = async () => {
+  // Check limit before creating new item
+  if (!editingItem.value && !canCreate("menuItems")) {
+    return; // canCreate already shows toast with upgrade prompt
+  }
+
   try {
     if (editingItem.value) {
       await $fetch(`/api/admin/menu/${editingItem.value.id}`, {
@@ -107,6 +114,7 @@ const saveItem = async () => {
     isModalOpen.value = false;
   } catch (error) {
     console.error("Failed to save menu item:", error);
+    handleError(error);
   }
 };
 
@@ -120,6 +128,7 @@ const deleteItem = async (item: MenuItem) => {
   if (!confirmed) return;
 
   try {
+    handleError(error);
     await $fetch(`/api/admin/menu/${item.id}`, {
       method: "DELETE",
     });

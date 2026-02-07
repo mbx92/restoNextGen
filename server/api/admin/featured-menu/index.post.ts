@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { hasFeature } from "~/server/utils/feature-gating";
 
 const createSchema = z.object({
   menuItemId: z.string().optional(),
@@ -11,6 +12,14 @@ const createSchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
+  // Check if CMS feature is enabled
+  if (!(await hasFeature(event, "CONTENT_MANAGEMENT_SERVICE"))) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: "Content Management Service is not available in your plan. Please upgrade to access this feature.",
+    });
+  }
+
   const body = await readBody(event);
   const validated = createSchema.parse(body);
 

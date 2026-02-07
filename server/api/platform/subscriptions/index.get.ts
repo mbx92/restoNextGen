@@ -1,8 +1,8 @@
 import { prisma } from "~/server/db/prisma";
+import { requirePlatformAdmin } from "~/server/utils/platform-auth";
 
-export default defineEventHandler(async (_event) => {
-  // Authentication is handled by platform-auth middleware
-  // This endpoint is only accessible to platform admins
+export default defineEventHandler(async (event) => {
+  await requirePlatformAdmin(event);
 
   const subscriptions = await prisma.subscription.findMany({
     include: {
@@ -13,6 +13,15 @@ export default defineEventHandler(async (_event) => {
           slug: true,
           businessType: true,
           isActive: true,
+        },
+      },
+      planRelation: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          price: true,
+          billingInterval: true,
         },
       },
     },
